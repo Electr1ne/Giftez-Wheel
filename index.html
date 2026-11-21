@@ -393,8 +393,8 @@
 
     .test-bar {
       display: none;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
     }
 
     .test-bar.visible { display: grid; }
@@ -406,7 +406,7 @@
       background: transparent;
       border: 1px dashed rgba(255, 255, 255, 0.16);
       color: var(--muted);
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
@@ -1115,6 +1115,12 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    // Очищаем старые ключи от прошлых версий
+    try {
+      localStorage.removeItem('giftez_seen_actors');
+      localStorage.removeItem('giftez_device_fp');
+    } catch (e) {}
+
     const PRIZE_META = {
       bear: { name: 'Мишка', stars: 15, exchangeStars: 13, chance: 0.035, boost5Chance: 0.05, top10Chance: 0.12 },
       rose: { name: 'Роза',   stars: 25, exchangeStars: 21, chance: 0.015, boost5Chance: 0.05, top10Chance: 0.08 }
@@ -1651,8 +1657,8 @@
     }
 
     function saveDemoData() {
-      localStorage.setItem('demo_inv_v10', JSON.stringify(state.inventory));
-      localStorage.setItem('demo_reqs_v10', JSON.stringify(state.myRequests));
+      localStorage.setItem('demo_inv_v11', JSON.stringify(state.inventory));
+      localStorage.setItem('demo_reqs_v11', JSON.stringify(state.myRequests));
     }
 
     let toastTimer = null;
@@ -1888,7 +1894,7 @@
       else window.open(url, '_blank');
 
       if (!state.isTelegram) {
-        localStorage.setItem('demo_sub_v10', '1');
+        localStorage.setItem('demo_sub_v11', '1');
         state.isSubscribed = true;
         updateUI();
         toast('Демо: подписка засчитана');
@@ -1899,7 +1905,7 @@
       if (state.spinning) return;
       if (!state.isTelegram) {
         state.nextFreeSpinAt = 0;
-        localStorage.setItem('demo_next_free_v10', '0');
+        localStorage.setItem('demo_next_free_v11', '0');
         updateUI();
         toast('24ч таймер сброшен');
         return;
@@ -1971,12 +1977,12 @@
           toast('Бэкенд бота не подключен');
         }
       } else {
-        state.isSubscribed = localStorage.getItem('demo_sub_v10') === '1';
-        state.nextFreeSpinAt = Number(localStorage.getItem('demo_next_free_v10') || 0);
+        state.isSubscribed = localStorage.getItem('demo_sub_v11') === '1';
+        state.nextFreeSpinAt = Number(localStorage.getItem('demo_next_free_v11') || 0);
         try {
-          const arr = JSON.parse(localStorage.getItem('demo_inv_v10') || '[]');
+          const arr = JSON.parse(localStorage.getItem('demo_inv_v11') || '[]');
           if (Array.isArray(arr)) state.inventory = arr;
-          const reqs = JSON.parse(localStorage.getItem('demo_reqs_v10') || '[]');
+          const reqs = JSON.parse(localStorage.getItem('demo_reqs_v11') || '[]');
           if (Array.isArray(reqs)) state.myRequests = reqs;
         } catch (e) {}
       }
@@ -1993,7 +1999,7 @@
 
     async function checkSubscription(manual = false) {
       if (!state.isTelegram) {
-        state.isSubscribed = localStorage.getItem('demo_sub_v10') === '1';
+        state.isSubscribed = localStorage.getItem('demo_sub_v11') === '1';
         updateUI();
         if (manual) toast(state.isSubscribed ? 'Подписка активна' : 'Сначала подпишись на канал');
         return state.isSubscribed;
@@ -2205,7 +2211,7 @@
         state.activeTierPreview = 'free';
         state.nextFreeSpinAt = nextSpin;
         if (!state.isTelegram) {
-          localStorage.setItem('demo_next_free_v10', String(state.nextFreeSpinAt));
+          localStorage.setItem('demo_next_free_v11', String(state.nextFreeSpinAt));
         }
 
         renderChances();
