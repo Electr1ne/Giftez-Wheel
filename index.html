@@ -230,19 +230,6 @@
       border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
-    .twin-banner {
-      display: none;
-      padding: 10px 13px;
-      border-radius: 14px;
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.35);
-      color: #fca5a5;
-      font-size: 12px;
-      line-height: 1.35;
-    }
-
-    .twin-banner.show { display: block; }
-
     /* Roulette */
     .wheel-card {
       background: linear-gradient(180deg, #181c28 0%, var(--panel) 100%);
@@ -406,7 +393,7 @@
 
     .test-bar {
       display: none;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 6px;
     }
 
@@ -430,13 +417,6 @@
       border-color: var(--orange-border);
       color: var(--orange-bright);
       background: var(--orange-soft);
-    }
-
-    .btn-test.active-twin {
-      border-style: solid;
-      border-color: rgba(239, 68, 68, 0.5);
-      color: #fca5a5;
-      background: rgba(239, 68, 68, 0.12);
     }
 
     .btn-test:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -966,10 +946,6 @@
         <div class="status-pill no" id="subStatus" onclick="checkSubscription(true)">Не проверено</div>
       </div>
 
-      <div class="twin-banner" id="twinBanner">
-        Обнаружен твинк-аккаунт. Прокрут недоступен ни бесплатно, ни за Stars.
-      </div>
-
       <div class="wheel-card fade-in">
         <div class="wheel-head">
           <h1>Ежедневная рулетка</h1>
@@ -1010,7 +986,6 @@
           <button type="button" class="btn-test" id="simStar5Btn" onclick="simulatePaidSpinTest('boost5')">Тест 5★</button>
           <button type="button" class="btn-test" id="simStar10Btn" onclick="simulatePaidSpinTest('top10')">Тест 10★</button>
           <button type="button" class="btn-test" id="noNothingBtn" onclick="toggleNoNothingTest()">Без нич.</button>
-          <button type="button" class="btn-test" id="twinTestBtn" onclick="toggleTwinTest()">Твинк</button>
         </div>
       </div>
 
@@ -1176,45 +1151,6 @@
 
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
-
-    function fnv1a(str) {
-      let h = 0x811c9dc5;
-      for (let i = 0; i < str.length; i++) {
-        h ^= str.charCodeAt(i);
-        h = Math.imul(h, 0x01000193);
-      }
-      return (h >>> 0).toString(16).padStart(8, '0');
-    }
-
-    function getDeviceFingerprint() {
-      const key = 'giftez_device_fp';
-      let fp = '';
-      try { fp = localStorage.getItem(key) || ''; } catch (e) {}
-      if (!fp) {
-        const raw = [
-          navigator.userAgent || '',
-          navigator.language || '',
-          screen.width + 'x' + screen.height,
-          Intl.DateTimeFormat().resolvedOptions().timeZone || ''
-        ].join('|');
-        fp = 'fp_' + fnv1a(raw) + '_' + fnv1a(raw + '_v2');
-        try { localStorage.setItem(key, fp); } catch (e) {}
-      }
-      return fp;
-    }
-
-    const DEVICE_FP = getDeviceFingerprint();
-
-    function checkLocalMultiAccount() {
-      const actor = tg?.initDataUnsafe?.user?.id ? `tg_${tg.initDataUnsafe.user.id}` : 'web_demo';
-      let seen = [];
-      try { seen = JSON.parse(localStorage.getItem('giftez_seen_actors') || '[]'); } catch (e) {}
-      if (!seen.includes(actor)) {
-        seen.push(actor);
-        try { localStorage.setItem('giftez_seen_actors', JSON.stringify(seen)); } catch (e) {}
-      }
-      return seen.filter((x) => x.startsWith('tg_')).length > 1;
-    }
 
     const FALLBACK_SVG = {
       bear: `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 64 64" fill="none"><circle cx="18" cy="18" r="8" fill="#ea580c"/><circle cx="46" cy="18" r="8" fill="#ea580c"/><circle cx="32" cy="34" r="18" fill="#f97316"/><ellipse cx="32" cy="38" rx="8" ry="6" fill="#ffedd5"/><circle cx="26" cy="30" r="2.2" fill="#1f2937"/><circle cx="38" cy="30" r="2.2" fill="#1f2937"/><circle cx="32" cy="36" r="2.5" fill="#1f2937"/></svg>`)}`,
@@ -1512,7 +1448,6 @@
       isAdmin: false,
       tgUsername: '',
       isSubscribed: false,
-      isTwin: false,
       fastSpin: localStorage.getItem('giftez_fast_spin') === '1',
       activeTierPreview: 'free',
       nextFreeSpinAt: 0,
@@ -1716,8 +1651,8 @@
     }
 
     function saveDemoData() {
-      localStorage.setItem('demo_inv_v9', JSON.stringify(state.inventory));
-      localStorage.setItem('demo_reqs_v9', JSON.stringify(state.myRequests));
+      localStorage.setItem('demo_inv_v10', JSON.stringify(state.inventory));
+      localStorage.setItem('demo_reqs_v10', JSON.stringify(state.myRequests));
     }
 
     let toastTimer = null;
@@ -1895,7 +1830,6 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               initData: tg.initData,
-              device_fp: DEVICE_FP,
               item_id: item.id,
               prize: item.prize,
               username
@@ -1948,19 +1882,13 @@
       toast(state.noNothingTest ? 'Тест: без «Ничего» включён' : 'Тест: «Ничего» включён');
     }
 
-    function toggleTwinTest() {
-      state.isTwin = !state.isTwin;
-      updateUI();
-      toast(state.isTwin ? 'Тест: твинк заблокирован' : 'Тест: флаг твинка снят');
-    }
-
     function openChannel() {
       const url = `https://t.me/${CONFIG.CHANNEL_USERNAME}`;
       if (tg?.openTelegramLink) tg.openTelegramLink(url);
       else window.open(url, '_blank');
 
       if (!state.isTelegram) {
-        localStorage.setItem('demo_sub_v9', '1');
+        localStorage.setItem('demo_sub_v10', '1');
         state.isSubscribed = true;
         updateUI();
         toast('Демо: подписка засчитана');
@@ -1971,7 +1899,7 @@
       if (state.spinning) return;
       if (!state.isTelegram) {
         state.nextFreeSpinAt = 0;
-        localStorage.setItem('demo_next_free_v9', '0');
+        localStorage.setItem('demo_next_free_v10', '0');
         updateUI();
         toast('24ч таймер сброшен');
         return;
@@ -1980,7 +1908,7 @@
         const r = await fetch(apiUrl('/api/dev/reset_cooldown'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData: tg.initData, device_fp: DEVICE_FP })
+          body: JSON.stringify({ initData: tg.initData })
         });
         const d = await r.json();
         if (d.ok) {
@@ -1997,10 +1925,6 @@
 
     function simulatePaidSpinTest(tier = 'std1') {
       if (state.spinning) return;
-      if (state.isTwin) {
-        toast('Твинку нельзя крутить ни за 1 ★, ни за 5 ★, ни за 10 ★');
-        return;
-      }
       runSpin({ tier });
     }
 
@@ -2010,8 +1934,6 @@
     }
 
     async function syncState() {
-      state.isTwin = checkLocalMultiAccount();
-
       if (state.isTelegram) {
         const u = tg.initDataUnsafe?.user;
         if (u) {
@@ -2029,12 +1951,11 @@
           const r = await fetch(apiUrl('/api/state'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: tg.initData, device_fp: DEVICE_FP })
+            body: JSON.stringify({ initData: tg.initData })
           });
           const d = await r.json();
           if (d.ok) {
             state.isSubscribed = Boolean(d.is_subscribed);
-            state.isTwin = state.isTwin || Boolean(d.is_twin);
             state.isAdmin = Boolean(d.is_admin);
             state.nextFreeSpinAt = (d.next_spin_at || 0) * 1000;
             if (Array.isArray(d.inventory_items)) state.inventory = d.inventory_items;
@@ -2050,12 +1971,12 @@
           toast('Бэкенд бота не подключен');
         }
       } else {
-        state.isSubscribed = localStorage.getItem('demo_sub_v9') === '1';
-        state.nextFreeSpinAt = Number(localStorage.getItem('demo_next_free_v9') || 0);
+        state.isSubscribed = localStorage.getItem('demo_sub_v10') === '1';
+        state.nextFreeSpinAt = Number(localStorage.getItem('demo_next_free_v10') || 0);
         try {
-          const arr = JSON.parse(localStorage.getItem('demo_inv_v9') || '[]');
+          const arr = JSON.parse(localStorage.getItem('demo_inv_v10') || '[]');
           if (Array.isArray(arr)) state.inventory = arr;
-          const reqs = JSON.parse(localStorage.getItem('demo_reqs_v9') || '[]');
+          const reqs = JSON.parse(localStorage.getItem('demo_reqs_v10') || '[]');
           if (Array.isArray(reqs)) state.myRequests = reqs;
         } catch (e) {}
       }
@@ -2072,7 +1993,7 @@
 
     async function checkSubscription(manual = false) {
       if (!state.isTelegram) {
-        state.isSubscribed = localStorage.getItem('demo_sub_v9') === '1';
+        state.isSubscribed = localStorage.getItem('demo_sub_v10') === '1';
         updateUI();
         if (manual) toast(state.isSubscribed ? 'Подписка активна' : 'Сначала подпишись на канал');
         return state.isSubscribed;
@@ -2081,11 +2002,10 @@
         const r = await fetch(apiUrl('/api/check_sub'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData: tg.initData, device_fp: DEVICE_FP })
+          body: JSON.stringify({ initData: tg.initData })
         });
         const d = await r.json();
         state.isSubscribed = Boolean(d.is_subscribed);
-        if (typeof d.is_twin === 'boolean') state.isTwin = state.isTwin || d.is_twin;
         updateUI();
         if (manual) toast(state.isSubscribed ? 'Подписка подтверждена' : 'Подписка не найдена');
         return state.isSubscribed;
@@ -2103,16 +2023,11 @@
       const activeReqCount = state.myRequests.filter((x) => x.status !== 'done').length;
       document.getElementById('navReqBadge').textContent = activeReqCount || state.myRequests.length;
 
-      document.getElementById('twinBanner').classList.toggle('show', state.isTwin);
-
       const fastBtn = document.getElementById('fastSpinBtn');
       fastBtn.classList.toggle('active', state.fastSpin);
 
       document.getElementById('noNothingBtn').classList.toggle('active-none', state.noNothingTest);
       document.getElementById('noNothingBtn').textContent = state.noNothingTest ? 'Без нич.: ВКЛ' : 'Без нич.';
-
-      document.getElementById('twinTestBtn').classList.toggle('active-twin', state.isTwin);
-      document.getElementById('twinTestBtn').textContent = state.isTwin ? 'Твинк: ВКЛ' : 'Твинк';
 
       const pill = document.getElementById('subStatus');
       const subLink = document.getElementById('subLinkBtn');
@@ -2152,14 +2067,6 @@
         return;
       }
 
-      if (state.isTwin) {
-        spinBtn.disabled = true;
-        fiveBtn.disabled = true;
-        tenBtn.disabled = true;
-        spinBtn.textContent = 'Недоступно для твинка';
-        return;
-      }
-
       fiveBtn.disabled = false;
       tenBtn.disabled = false;
 
@@ -2196,10 +2103,6 @@
 
     function startStarInvoice(tier) {
       const cfg = TIER_CONFIG[tier] || TIER_CONFIG.std1;
-      if (state.isTwin) {
-        toast('Твинку нельзя крутить даже за звёзды');
-        return;
-      }
       if (!state.isTelegram || !tg?.openInvoice) {
         toast(`Открой в Telegram или нажми «Тест ${cfg.stars}★»`);
         return;
@@ -2218,7 +2121,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           initData: tg.initData,
-          device_fp: DEVICE_FP,
           tier,
           stars: cfg.stars
         })
@@ -2246,12 +2148,6 @@
     }
 
     async function runSpin({ tier = 'free' }) {
-      if (state.isTwin) {
-        toast('Твинку нельзя крутить');
-        updateUI();
-        return;
-      }
-
       const isPaidStar = tier !== 'free';
       const cfg = TIER_CONFIG[tier] || TIER_CONFIG.free;
 
@@ -2272,7 +2168,6 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               initData: tg.initData,
-              device_fp: DEVICE_FP,
               tier,
               paid_star: isPaidStar,
               stars_amount: cfg.stars,
@@ -2285,7 +2180,6 @@
             state.activeTierPreview = 'free';
             renderChances();
             if (d.error === 'not_subscribed') state.isSubscribed = false;
-            if (d.error === 'twin_detected') state.isTwin = true;
             if (d.next_spin_at) state.nextFreeSpinAt = d.next_spin_at * 1000;
             updateUI();
             toast(d.message || 'Спин недоступен');
@@ -2311,7 +2205,7 @@
         state.activeTierPreview = 'free';
         state.nextFreeSpinAt = nextSpin;
         if (!state.isTelegram) {
-          localStorage.setItem('demo_next_free_v9', String(state.nextFreeSpinAt));
+          localStorage.setItem('demo_next_free_v10', String(state.nextFreeSpinAt));
         }
 
         renderChances();
@@ -2346,7 +2240,7 @@
     }
 
     async function handleSpinClick() {
-      if (state.spinning || state.isTwin) return;
+      if (state.spinning) return;
 
       if (!state.isSubscribed) {
         const ok = await checkSubscription(true);
@@ -2369,7 +2263,7 @@
     }
 
     async function handlePaidTierClick(tier) {
-      if (state.spinning || state.isTwin) return;
+      if (state.spinning) return;
 
       if (!state.isSubscribed) {
         const ok = await checkSubscription(true);
