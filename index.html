@@ -32,7 +32,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    input[type="text"] {
+    input[type="text"], textarea {
       user-select: text;
       -webkit-user-select: text;
     }
@@ -525,6 +525,88 @@
       cursor: pointer;
     }
 
+    .btn-danger-soft {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 11px;
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-danger-soft:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .admin-tools-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+    }
+
+    .admin-tools-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .admin-tools-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .admin-tools-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .broadcast-area {
+      width: 100%;
+      min-height: 76px;
+      border-radius: 12px;
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 10px 11px;
+      font-family: inherit;
+      font-size: 12.5px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .broadcast-area:focus {
+      border-color: var(--orange-bright);
+    }
+
+    .btn-broadcast {
+      width: 100%;
+      height: 38px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #fb923c, #ea580c);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-broadcast:disabled {
+      background: var(--panel);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
     .note-box {
       padding: 10px 12px;
       border-radius: 12px;
@@ -941,9 +1023,9 @@
       <div class="channel-row fade-in">
         <div class="channel-info">
           <h3 id="channelLabel">Канал @gift_e_z</h3>
-          <p>Подписка обязательна для прокрута</p>
+          <p>Проверяется автоматически при входе</p>
         </div>
-        <div class="status-pill no" id="subStatus" onclick="checkSubscription(true)">Не проверено</div>
+        <div class="status-pill no" id="subStatus" onclick="checkSubscription(true)">Проверка...</div>
       </div>
 
       <div class="wheel-card fade-in">
@@ -959,7 +1041,7 @@
 
       <div class="actions fade-in">
         <div class="spin-row">
-          <button type="button" class="btn-main" id="spinBtn" onclick="handleSpinClick()">Проверить подписку</button>
+          <button type="button" class="btn-main" id="spinBtn" onclick="handleSpinClick()">Проверка подписки...</button>
           <button type="button" class="btn-fast-toggle" id="fastSpinBtn" onclick="toggleFastSpin()" title="Быстрый прокрут">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -1041,7 +1123,7 @@
       <div class="section-card fade-in">
         <div class="card-head">
           <h2>Мои заявки</h2>
-          <button type="button" class="btn-mini-refresh" onclick="syncState()">Обновить</button>
+          <button type="button" class="btn-mini-refresh" onclick="syncState(true)">Обновить</button>
         </div>
         <div class="note-box">
           Срок выдачи: <b>от 10 минут до 14 дней</b>. Обмен в звёзды: <b>Мишка 15 → 13 ★</b>, <b>Роза 25 → 21 ★</b> (удержание самого Telegram, не наша комиссия).
@@ -1057,8 +1139,28 @@
           <h2>Админ-панель</h2>
           <button type="button" class="btn-mini-refresh" onclick="loadAdminRequests()">Обновить</button>
         </div>
+
+        <div class="admin-tools-box">
+          <div class="admin-tools-row">
+            <div>
+              <div class="admin-tools-title">Сброс 24ч таймера всем</div>
+              <div class="admin-tools-sub">Обнуляет кулдаун бесплатных спинов у всех игроков</div>
+            </div>
+            <button type="button" class="btn-danger-soft" id="resetAllTimersBtn" onclick="adminResetAllTimers()">Сброс всем</button>
+          </div>
+        </div>
+
+        <div class="admin-tools-box">
+          <div>
+            <div class="admin-tools-title">Рассылка всем пользователям</div>
+            <div class="admin-tools-sub">Отправит сообщение в ЛС от бота с кнопкой рулетки</div>
+          </div>
+          <textarea class="broadcast-area" id="broadcastText" placeholder="Введите текст рассылки..."></textarea>
+          <button type="button" class="btn-broadcast" id="broadcastSendBtn" onclick="adminSendBroadcast()">Разослать всем</button>
+        </div>
+
         <div class="note-box">
-          Заявки на выдачу подарков. Нажми <b>«Выдано»</b>, когда отправишь подарок или звёзды пользователю.
+          Заявки на выдачу подарков. Нажми <b>«Выдано»</b>, когда отправишь подарок или звёзды — пользователю уйдёт уведомление в ЛС.
         </div>
         <div class="items-stack" id="adminRequestsList"></div>
       </div>
@@ -1115,7 +1217,6 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // Очищаем старые ключи от прошлых версий
     try {
       localStorage.removeItem('giftez_seen_actors');
       localStorage.removeItem('giftez_device_fp');
@@ -1468,7 +1569,9 @@
       },
       noNothingTest: false,
       spinning: false,
-      claiming: false
+      claiming: false,
+      broadcasting: false,
+      resettingAll: false
     };
 
     function getPoolForTier(tier) {
@@ -1637,14 +1740,86 @@
         });
         const d = await r.json();
         if (d.ok) {
-          toast('Заявка отмечена как выполненная');
+          toast('Выполнено · уведомление отправлено в ЛС');
           await loadAdminRequests();
-          await syncState();
+          await syncState(false);
         } else {
           toast(d.message || 'Ошибка');
         }
       } catch (e) {
         toast('Ошибка сети');
+      }
+    }
+
+    async function adminResetAllTimers() {
+      if (!state.isAdmin || state.resettingAll) return;
+      if (!state.isTelegram) {
+        state.nextFreeSpinAt = 0;
+        localStorage.setItem('demo_next_free_v11', '0');
+        updateUI();
+        toast('Демо: таймер сброшен');
+        return;
+      }
+      state.resettingAll = true;
+      const btn = document.getElementById('resetAllTimersBtn');
+      btn.disabled = true;
+      try {
+        const r = await fetch(apiUrl('/api/admin/reset_all_timers'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          toast(`Сброшен 24ч таймер у ${d.updated_users ?? 0} игроков`);
+          await syncState(false);
+        } else {
+          toast(d.message || 'Ошибка сброса');
+        }
+      } catch (e) {
+        toast('Ошибка сети');
+      } finally {
+        state.resettingAll = false;
+        btn.disabled = false;
+      }
+    }
+
+    async function adminSendBroadcast() {
+      if (!state.isAdmin || state.broadcasting) return;
+      const area = document.getElementById('broadcastText');
+      const text = (area.value || '').trim();
+      if (!text) {
+        toast('Введи текст рассылки');
+        return;
+      }
+      if (!state.isTelegram) {
+        area.value = '';
+        toast('Демо: рассылка проверена');
+        return;
+      }
+      state.broadcasting = true;
+      const btn = document.getElementById('broadcastSendBtn');
+      btn.disabled = true;
+      btn.textContent = 'Рассылаем...';
+      try {
+        const r = await fetch(apiUrl('/api/admin/broadcast'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData, text })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          area.value = '';
+          toast(`Отправлено: ${d.sent}/${d.total} (ошибок: ${d.failed})`);
+        } else {
+          toast(d.message || 'Ошибка рассылки');
+        }
+      } catch (e) {
+        toast('Ошибка сети при рассылке');
+      } finally {
+        state.broadcasting = false;
+        btn.disabled = false;
+        btn.textContent = 'Разослать всем';
       }
     }
 
@@ -1939,7 +2114,7 @@
       document.getElementById('adminTestBar').classList.toggle('visible', showTests);
     }
 
-    async function syncState() {
+    async function syncState(forceSubCheck = true) {
       if (state.isTelegram) {
         const u = tg.initDataUnsafe?.user;
         if (u) {
@@ -1972,6 +2147,9 @@
             }
             if (d.boost_chances) state.chancesByTier.boost5 = { ...state.chancesByTier.boost5, ...d.boost_chances };
             if (d.top10_chances) state.chancesByTier.top10 = { ...state.chancesByTier.top10, ...d.top10_chances };
+          }
+          if (forceSubCheck) {
+            await checkSubscription(false);
           }
         } catch (e) {
           toast('Бэкенд бота не подключен');
@@ -2016,7 +2194,7 @@
         if (manual) toast(state.isSubscribed ? 'Подписка подтверждена' : 'Подписка не найдена');
         return state.isSubscribed;
       } catch (e) {
-        toast('Ошибка проверки подписки');
+        if (manual) toast('Ошибка проверки подписки');
         return false;
       }
     }
@@ -2287,6 +2465,20 @@
       startStarInvoice(tier);
     }
 
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !state.spinning) {
+        syncState(true);
+      }
+    });
+
+    if (tg?.onEvent) {
+      tg.onEvent('viewportChanged', () => {
+        if (!state.spinning) {
+          checkSubscription(false);
+        }
+      });
+    }
+
     applyVolumeUI();
     syncAdminTestBar();
     applyNavLayout();
@@ -2294,7 +2486,7 @@
     buildWheelSlots();
     window.addEventListener('resize', resizeWheel);
     resizeWheel();
-    syncState();
+    syncState(true);
     setInterval(updateUI, 1000);
   </script>
 </body>
