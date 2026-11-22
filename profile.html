@@ -23,12 +23,16 @@
       <div class="grid-2">
         <div class="note-box">
           <div style="font-size:18px;font-weight:900;color:#fde047;" id="profStarsVal">0 ★</div>
-          <div>Баланс звёзд</div>
+          <div>Общий баланс</div>
         </div>
         <div class="note-box">
-          <div style="font-size:18px;font-weight:900;color:#f1f5f9;" id="profSpinsVal">0</div>
-          <div>Открыто кейсов</div>
+          <div style="font-size:18px;font-weight:900;color:#7dd3fc;" id="profAvailVal">0 ★</div>
+          <div>Доступно к выводу</div>
         </div>
+      </div>
+
+      <div class="note-box" id="profWagerBox">
+        Отыгрыш: <b>0 ★</b> • Открыто кейсов: <b id="profSpinsVal">0</b>
       </div>
     </div>
 
@@ -52,9 +56,15 @@
         document.getElementById("profUserName").textContent = u?.first_name || "Игрок";
         document.getElementById("profUserHandle").textContent = u?.username ? `@${u.username} · ID ${u.id}` : "Telegram Mini App";
         if (appState) {
+          const total = Number(appState.stars_balance || 0);
+          const wag = Number(appState.wager_left || 0);
+          const avail = Math.max(0, total - wag);
+
           document.getElementById("profRoleTag").textContent = appState.is_admin ? "ADMIN" : "Игрок";
-          document.getElementById("profStarsVal").textContent = `${Number(appState.stars_balance || 0)} ★`;
-          document.getElementById("profSpinsVal").textContent = String(Number(appState.total_spins || 0));
+          document.getElementById("profStarsVal").textContent = `${total} ★`;
+          document.getElementById("profAvailVal").textContent = `${avail} ★`;
+          document.getElementById("profWagerBox").innerHTML =
+            `Осталось отыграть: <b>${wag} ★</b> • Открыто кейсов: <b>${Number(appState.total_spins || 0)}</b>`;
         }
       }
 
@@ -90,6 +100,8 @@
             playWin();
             inp.value = "";
             appState.stars_balance = d.stars_balance;
+            appState.wager_left = d.wager_left;
+            appState.withdrawable_stars = d.withdrawable_stars;
             saveCache(appState);
             updateStarsDisplay(appState.stars_balance);
             syncProfile();

@@ -7,23 +7,23 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
   <style>
-    .dial-box {
+    .dial-stage {
       position: relative;
-      width: 236px;
-      height: 236px;
-      margin: 4px auto 10px;
+      width: 248px;
+      height: 248px;
+      margin: 2px auto 12px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .dial-inner {
+    .dial-center-disc {
       position: absolute;
-      inset: 38px;
+      inset: 54px;
       border-radius: 50%;
-      background: radial-gradient(circle at 50% 30%, #15213b 0%, #0b101d 100%);
+      background: radial-gradient(circle at 50% 35%, #131c31 0%, #0b101d 100%);
       border: 1px solid var(--border-strong);
-      box-shadow: inset 0 0 24px rgba(56, 189, 248, 0.12);
+      box-shadow: inset 0 0 22px rgba(56, 189, 248, 0.14);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -32,63 +32,122 @@
       pointer-events: none;
     }
 
-    .dial-pct {
-      font-size: 31px;
+    .dial-mult-big {
+      font-size: 30px;
       font-weight: 900;
       color: var(--ice-bright);
-      line-height: 1.1;
+      letter-spacing: -0.5px;
+      line-height: 1.05;
     }
 
-    .dial-mult {
-      font-size: 11px;
-      font-weight: 800;
-      color: #fde047;
-      margin-top: 2px;
+    .dial-chance-sub {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-top: 3px;
     }
 
-    .mode-switch {
+    /* Две карточки под барабаном как на референсе */
+    .duel-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .duel-card {
+      padding: 12px 10px;
+      border-radius: 18px;
+      background: var(--panel-2);
+      border: 1px solid var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 6px;
+      min-height: 92px;
+    }
+
+    .duel-label {
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .duel-stake-val {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .duel-target-img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+    }
+
+    /* Вкладки Звёзды / Подарки */
+    .up-tabs {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
       padding: 4px;
-      border-radius: 13px;
-      background: #0a0e18;
+      border-radius: 14px;
+      background: #080c16;
       border: 1px solid var(--border);
     }
 
-    .mode-tab-btn {
-      height: 34px;
+    .up-tab-btn {
+      height: 36px;
       border: none;
-      border-radius: 10px;
+      border-radius: 11px;
       background: transparent;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 800;
       cursor: pointer;
     }
 
-    .mode-tab-btn.active {
-      background: var(--ice-soft);
-      color: var(--ice-bright);
-      border: 1px solid var(--ice-border);
+    .up-tab-btn.active {
+      background: var(--panel-3);
+      color: #fff;
     }
 
-    .qbet-row {
+    .stake-input-box {
+      text-align: center;
+      padding: 8px 10px;
+      border-radius: 16px;
+      background: #080c16;
+      border: 1px solid var(--border);
+    }
+
+    .stake-inline-input {
+      width: 120px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 26px;
+      font-weight: 900;
+      text-align: center;
+      outline: none;
+    }
+
+    .quick-adj-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 5px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
 
-    .inv-pick-grid {
+    .targets-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 8px;
-      max-height: 180px;
-      overflow-y: auto;
     }
 
-    .target-card {
-      padding: 10px 11px;
+    .gift-target-btn {
+      padding: 10px;
       border-radius: 14px;
       background: var(--panel-2);
       border: 1px solid var(--border);
@@ -100,13 +159,13 @@
       text-align: left;
     }
 
-    .target-card.active {
+    .gift-target-btn.active {
       border-color: var(--ice-bright);
       background: var(--ice-soft);
-      box-shadow: 0 0 18px rgba(56, 189, 248, 0.22);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.24);
     }
 
-    .target-card img {
+    .gift-target-btn img {
       width: 34px;
       height: 34px;
       object-fit: contain;
@@ -118,204 +177,174 @@
     <div id="headerMount"></div>
 
     <div class="sec-row fade-in">
-      <a class="btn-mini-refresh" href="./index.html" id="backHomeBtn">&lt; На главную</a>
+      <a class="btn-mini-refresh" href="index.html">&lt; Назад</a>
       <span class="pill-ice">АПГРЕЙДЕР</span>
     </div>
 
     <div class="section-card fade-in">
-      <div class="dial-box">
-        <canvas id="upgradeDial" width="236" height="236"></canvas>
-        <div class="dial-inner">
-          <div class="dial-pct" id="upPctText">30%</div>
-          <div class="dial-mult" id="upMultText">x3.00</div>
-          <div class="row-sub" id="upSubText">Шанс успеха</div>
+      <!-- Двойной барабан с ледяным указателем сверху как на референсе -->
+      <div class="dial-stage">
+        <canvas id="upgradeDial" width="248" height="248"></canvas>
+        <div class="dial-center-disc">
+          <div class="dial-mult-big" id="upMultText">x1.50</div>
+          <div class="dial-chance-sub" id="upPctText">Шанс 60.0%</div>
         </div>
       </div>
 
-      <!-- Переключатель: ставка звёздами или подарком из инвентаря -->
-      <div class="mode-switch">
-        <button type="button" class="mode-tab-btn active" id="tabModeStars">Звёздами (★)</button>
-        <button type="button" class="mode-tab-btn" id="tabModeItems">Подарком из инвентаря</button>
-      </div>
-
-      <!-- Блок ставки звёздами -->
-      <div id="starsStakePanel" style="display:flex;flex-direction:column;gap:8px;">
-        <input type="number" class="field-input" id="upBetInput" min="1" value="5" placeholder="Ставка в звёздах" />
-        <div class="qbet-row">
-          <button type="button" class="btn-soft" data-qbet="1" style="height:34px;min-height:34px;font-size:11.5px;padding:0;">1 ★</button>
-          <button type="button" class="btn-soft" data-qbet="5" style="height:34px;min-height:34px;font-size:11.5px;padding:0;">5 ★</button>
-          <button type="button" class="btn-soft" data-qbet="15" style="height:34px;min-height:34px;font-size:11.5px;padding:0;">15 ★</button>
-          <button type="button" class="btn-soft" id="btnHalfStars" style="height:34px;min-height:34px;font-size:11.5px;padding:0;">50%</button>
-          <button type="button" class="btn-soft" id="btnMaxStars" style="height:34px;min-height:34px;font-size:11.5px;padding:0;">MAX</button>
+      <!-- Две карточки: Ваша ставка | Цель апгрейда -->
+      <div class="duel-cards">
+        <div class="duel-card">
+          <div class="duel-label">Ваша ставка</div>
+          <div class="duel-stake-val">
+            <span style="color:var(--ice-bright);">★</span>
+            <span id="cardStakeNum">10</span>
+          </div>
+        </div>
+        <div class="duel-card" id="openTargetSheetCard" style="cursor:pointer;">
+          <div class="duel-label">Цель апгрейда</div>
+          <img class="duel-target-img" id="cardTargetImg" src="./bear.png" onerror="this.src=getFallbackSrc('bear')" alt="" />
+          <div class="row-sub" id="cardTargetName">Мишка · 15 ★</div>
         </div>
       </div>
 
-      <!-- Блок выбора подарка из инвентаря -->
-      <div id="itemsStakePanel" style="display:none;flex-direction:column;gap:8px;">
-        <div class="inv-pick-grid" id="upInvPickGrid"></div>
+      <!-- Кнопка Апгрейд -->
+      <button type="button" class="btn-main" id="btnRunUpgrade">Апгрейд</button>
+
+      <!-- Вкладки Звёзды / Подарки -->
+      <div class="up-tabs">
+        <button type="button" class="up-tab-btn active" id="tabUpStars">Звёзды</button>
+        <button type="button" class="up-tab-btn" id="tabUpGifts">Подарки</button>
       </div>
 
-      <div class="card-head" style="margin-top:2px;">
-        <h2 style="font-size:14.5px;">Цель апгрейда</h2>
-        <span class="row-sub">Шанс от 1% до 80%</span>
-      </div>
-      <div class="grid-2" id="upTargetsGrid"></div>
+      <!-- Панель Звёзды -->
+      <div id="paneUpStars" style="display:flex;flex-direction:column;gap:8px;">
+        <div class="stake-input-box">
+          <div class="row-sub" style="margin-bottom:4px;">Введите сумму ставки</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+            <span style="font-size:22px;font-weight:900;color:var(--ice-bright);">★</span>
+            <input type="number" class="stake-inline-input" id="upBetInput" min="1" value="10" />
+          </div>
+        </div>
 
-      <button type="button" class="btn-main" id="btnRunUpgrade">Прокачать</button>
+        <div class="quick-adj-row">
+          <button type="button" class="btn-soft" id="btnMinus10">−10</button>
+          <button type="button" class="btn-soft" id="btnPlus50">+50</button>
+          <button type="button" class="btn-soft" id="btnMaxStake">MAX</button>
+        </div>
+      </div>
+
+      <!-- Панель Подарки (выбор цели апгрейда) -->
+      <div id="paneUpGifts" style="display:none;flex-direction:column;gap:8px;">
+        <div class="row-sub">Выбери целевой подарок (выигрыш зачисляется в ★ на баланс)</div>
+        <div class="targets-grid" id="upTargetsGrid"></div>
+      </div>
     </div>
   </div>
 
   <script src="assets/app.js"></script>
   <script>
     (function () {
-      const TARGETS = [
-        { id: "bear", name: "Мишка", stars: 15 },
-        { id: "rose", name: "Роза", stars: 25 },
-        { id: "giftbox", name: "Коробка", stars: 25 },
-        { id: "rocket", name: "Ракета", stars: 50 },
-        { id: "ring", name: "Кольцо", stars: 100 }
-      ];
+      const TARGETS = Object.values(GIFTS_CATALOG);
 
       let appState = null;
-      let stakeMode = "stars"; // "stars" | "item"
-      let selectedItemId = null;
       let selected = TARGETS[0];
       let pointerDeg = 0;
-      let dialFlashColor = null;
+      let flashColor = null;
       let busy = false;
 
       const canvas = document.getElementById("upgradeDial");
       const g = canvas.getContext("2d");
 
-      document.getElementById("backHomeBtn").onclick = (e) => {
-        e.preventDefault();
-        navigateToPage("index.html");
-      };
-
-      function getStakeStars() {
-        if (stakeMode === "item") {
-          const items = (appState && appState.inventory_items) || [];
-          const found = items.find((x) => x.id === selectedItemId);
-          if (!found) return 0;
-          return Number((PRIZE_META[found.prize] || {}).stars || found.stars || 0);
-        }
+      function getBet() {
         return Math.max(1, Math.floor(Number(document.getElementById("upBetInput").value || 1)));
       }
 
       function getChance() {
-        const stake = getStakeStars();
-        if (stake <= 0 || stake >= selected.stars) return 0;
-        return Math.min(80, Math.max(1, Number(((stake / Math.max(1, selected.stars)) * 90).toFixed(1))));
+        const bet = getBet();
+        if (bet >= selected.stars) return 0;
+        return Math.min(80, Math.max(1, Number(((bet / Math.max(1, selected.stars)) * 90).toFixed(1))));
       }
 
       function drawDial(pct, deg) {
         const w = canvas.width;
         const cx = w / 2;
         const cy = w / 2;
-        const r = w / 2 - 16;
+        const outerR = 104;
+        const innerR = 82;
         g.clearRect(0, 0, w, w);
 
-        // Внешние риски
-        for (let i = 0; i < 36; i++) {
-          const a = (i * 10) * (Math.PI / 180);
-          const x1 = cx + Math.cos(a) * (r + 10);
-          const y1 = cy + Math.sin(a) * (r + 10);
-          const x2 = cx + Math.cos(a) * (r + 14);
-          const y2 = cy + Math.sin(a) * (r + 14);
-          g.beginPath();
-          g.moveTo(x1, y1);
-          g.lineTo(x2, y2);
-          g.strokeStyle = "rgba(148, 197, 255, 0.2)";
-          g.lineWidth = 1.5;
-          g.stroke();
-        }
-
-        // Фоновый круг
+        // Внешнее тёмное кольцо
         g.beginPath();
-        g.arc(cx, cy, r, 0, Math.PI * 2);
-        g.strokeStyle = "rgba(148, 197, 255, 0.12)";
+        g.arc(cx, cy, outerR, 0, Math.PI * 2);
+        g.strokeStyle = "rgba(148, 197, 255, 0.11)";
         g.lineWidth = 14;
         g.stroke();
 
-        // Сектор шанса победы
+        // Внутреннее кольцо
+        g.beginPath();
+        g.arc(cx, cy, innerR, 0, Math.PI * 2);
+        g.strokeStyle = "rgba(148, 197, 255, 0.08)";
+        g.lineWidth = 12;
+        g.stroke();
+
+        // Ледяная дуга шанса успеха (от -90° по часовой)
         if (pct > 0) {
           const start = -Math.PI / 2;
           const end = start + (Math.PI * 2 * (pct / 100));
           g.beginPath();
-          g.arc(cx, cy, r, start, end);
-          g.strokeStyle = dialFlashColor || "#38bdf8";
+          g.arc(cx, cy, outerR, start, end);
+          g.strokeStyle = flashColor || "#38bdf8";
           g.lineWidth = 14;
           g.lineCap = "round";
           g.stroke();
         }
 
-        // Бегущий указатель
-        const rad = (-90 + deg) * (Math.PI / 180);
-        const px = cx + Math.cos(rad) * r;
-        const py = cy + Math.sin(rad) * r;
+        // Неоново-ледяной указатель (стрелка)
+        g.save();
+        g.translate(cx, cy);
+        g.rotate((deg * Math.PI) / 180);
+
+        g.shadowColor = "rgba(125, 211, 252, 0.85)";
+        g.shadowBlur = 14;
 
         g.beginPath();
-        g.arc(px, py, 9, 0, Math.PI * 2);
-        g.fillStyle = "rgba(253, 224, 71, 0.3)";
+        g.moveTo(0, -outerR + 18);
+        g.lineTo(-10, -outerR - 6);
+        g.quadraticCurveTo(0, -outerR - 14, 10, -outerR - 6);
+        g.closePath();
+        g.fillStyle = "#f8fafc";
         g.fill();
 
+        // Ледяная полоска на указателе как на референсе
         g.beginPath();
-        g.arc(px, py, 5.5, 0, Math.PI * 2);
-        g.fillStyle = "#fde047";
+        g.rect(-6, -outerR - 6, 12, 3.5);
+        g.fillStyle = "#38bdf8";
         g.fill();
+
+        g.restore();
       }
 
-      function syncDial() {
-        const stake = getStakeStars();
+      function syncUI() {
+        const bet = getBet();
         const pct = getChance();
-        const mult = stake > 0 ? (selected.stars / stake).toFixed(2) : "0.00";
-        document.getElementById("upPctText").textContent = `${pct}%`;
+        const mult = (selected.stars / bet).toFixed(2);
+
+        document.getElementById("cardStakeNum").textContent = String(bet);
         document.getElementById("upMultText").textContent = `x${mult}`;
+        document.getElementById("upPctText").textContent = `Шанс ${pct}%`;
+
+        document.getElementById("cardTargetImg").src = getImageSrc(selected.icon);
+        document.getElementById("cardTargetName").textContent = `${selected.name} · ${selected.stars} ★`;
+
         drawDial(pct, pointerDeg);
-      }
-
-      function renderInventoryPicker() {
-        const grid = document.getElementById("upInvPickGrid");
-        const items = (appState && Array.isArray(appState.inventory_items)) ? appState.inventory_items : [];
-        if (!items.length) {
-          selectedItemId = null;
-          grid.innerHTML = `<div class="empty-box" style="grid-column:1/-1;padding:14px;">В инвентаре нет подарков для апгрейда</div>`;
-          return;
-        }
-        if (!selectedItemId || !items.some((x) => x.id === selectedItemId)) {
-          selectedItemId = items[0].id;
-        }
-        grid.innerHTML = items
-          .map((it) => {
-            const meta = PRIZE_META[it.prize] || { name: it.name || it.prize, stars: it.stars || 0 };
-            return `
-              <button type="button" class="target-card ${it.id === selectedItemId ? "active" : ""}" data-inv-pick="${escapeHtml(it.id)}">
-                <img src="${getImageSrc(it.prize)}" onerror="this.src=getFallbackSrc('${escapeHtml(it.prize)}')" alt="" />
-                <div>
-                  <div class="row-title">${escapeHtml(meta.name)}</div>
-                  <div class="row-sub">${meta.stars} ★</div>
-                </div>
-              </button>
-            `;
-          })
-          .join("");
-
-        grid.querySelectorAll("[data-inv-pick]").forEach((btn) => {
-          btn.onclick = () => {
-            if (busy) return;
-            selectedItemId = btn.getAttribute("data-inv-pick");
-            renderInventoryPicker();
-            syncDial();
-          };
-        });
       }
 
       function renderTargets() {
         const grid = document.getElementById("upTargetsGrid");
         grid.innerHTML = TARGETS.map(
           (t) => `
-            <button type="button" class="target-card ${t.id === selected.id ? "active" : ""}" data-tid="${t.id}">
-              <img src="${getImageSrc(t.id)}" onerror="this.src=getFallbackSrc('${t.id}')" alt="" />
+            <button type="button" class="gift-target-btn ${t.id === selected.id ? "active" : ""}" data-tid="${t.id}">
+              <img src="${getImageSrc(t.icon)}" onerror="this.src=getFallbackSrc('${t.id}')" alt="" />
               <div>
                 <div class="row-title">${escapeHtml(t.name)}</div>
                 <div class="row-sub">${t.stars} ★</div>
@@ -331,27 +360,16 @@
             if (found) {
               selected = found;
               renderTargets();
-              syncDial();
+              syncUI();
             }
           };
         });
       }
 
-      function switchStakeMode(mode) {
-        if (busy) return;
-        stakeMode = mode;
-        document.getElementById("tabModeStars").classList.toggle("active", mode === "stars");
-        document.getElementById("tabModeItems").classList.toggle("active", mode === "item");
-        document.getElementById("starsStakePanel").style.display = mode === "stars" ? "flex" : "none";
-        document.getElementById("itemsStakePanel").style.display = mode === "item" ? "flex" : "none";
-        if (mode === "item") renderInventoryPicker();
-        syncDial();
-      }
-
       function animatePointer(totalDeg) {
         return new Promise((resolve) => {
           const t0 = performance.now();
-          const dur = 3200;
+          const dur = 3400;
           const pct = getChance();
           let lastTickStep = 0;
 
@@ -359,7 +377,7 @@
             const p = Math.min(1, (now - t0) / dur);
             const ease = 1 - Math.pow(1 - p, 3.8);
             pointerDeg = totalDeg * ease;
-            const tickStep = Math.floor(pointerDeg / 22);
+            const tickStep = Math.floor(pointerDeg / 20);
             if (tickStep !== lastTickStep) {
               lastTickStep = tickStep;
               playTick();
@@ -378,86 +396,92 @@
       const session = initGiftezPage("home", {
         onStateReady(fresh) {
           appState = fresh;
-          if (stakeMode === "item") renderInventoryPicker();
-          syncDial();
         }
       });
       if (!session) return;
       appState = session.state;
 
       renderTargets();
-      syncDial();
+      syncUI();
 
-      document.getElementById("tabModeStars").onclick = () => switchStakeMode("stars");
-      document.getElementById("tabModeItems").onclick = () => switchStakeMode("item");
-      document.getElementById("upBetInput").oninput = syncDial;
+      function showTab(mode) {
+        document.getElementById("tabUpStars").classList.toggle("active", mode === "stars");
+        document.getElementById("tabUpGifts").classList.toggle("active", mode === "gifts");
+        document.getElementById("paneUpStars").style.display = mode === "stars" ? "flex" : "none";
+        document.getElementById("paneUpGifts").style.display = mode === "gifts" ? "flex" : "none";
+      }
 
-      document.querySelectorAll("[data-qbet]").forEach((b) => {
-        b.onclick = () => {
-          if (busy) return;
-          document.getElementById("upBetInput").value = b.getAttribute("data-qbet");
-          syncDial();
-        };
-      });
-      document.getElementById("btnHalfStars").onclick = () => {
+      document.getElementById("tabUpStars").onclick = () => showTab("stars");
+      document.getElementById("tabUpGifts").onclick = () => showTab("gifts");
+      document.getElementById("openTargetSheetCard").onclick = () => showTab("gifts");
+
+      document.getElementById("upBetInput").oninput = syncUI;
+
+      document.getElementById("btnMinus10").onclick = () => {
         if (busy) return;
-        const half = Math.max(1, Math.floor(Number(appState.stars_balance || 0) / 2));
-        document.getElementById("upBetInput").value = half;
-        syncDial();
+        const cur = getBet();
+        document.getElementById("upBetInput").value = String(Math.max(1, cur - 10));
+        syncUI();
       };
-      document.getElementById("btnMaxStars").onclick = () => {
+
+      document.getElementById("btnPlus50").onclick = () => {
         if (busy) return;
-        const maxSafe = Math.max(1, Math.min(Number(appState.stars_balance || 0), Math.floor(selected.stars * 0.88)));
-        document.getElementById("upBetInput").value = maxSafe;
-        syncDial();
+        const cur = getBet();
+        const cap = Math.max(1, selected.stars - 1);
+        document.getElementById("upBetInput").value = String(Math.min(cap, cur + 50));
+        syncUI();
+      };
+
+      document.getElementById("btnMaxStake").onclick = () => {
+        if (busy) return;
+        const bal = Math.max(1, Number(appState.stars_balance || 0));
+        const cap = Math.max(1, selected.stars - 1);
+        document.getElementById("upBetInput").value = String(Math.min(bal, cap));
+        syncUI();
       };
 
       document.getElementById("btnRunUpgrade").onclick = async () => {
         if (busy) return;
+        const bet = getBet();
+        if (bet >= selected.stars) {
+          toast("Выбери цель дороже твоей ставки");
+          showTab("gifts");
+          return;
+        }
         if (!tg?.initData) {
           toast("Открой в Telegram");
           return;
         }
 
-        const stake = getStakeStars();
-        if (stake <= 0) {
-          toast(stakeMode === "item" ? "Выбери подарок из инвентаря" : "Укажи ставку от 1 ★");
-          return;
-        }
-        if (stake >= selected.stars) {
-          toast("Выбери цель дороже твоей ставки");
-          return;
-        }
-
         busy = true;
-        dialFlashColor = null;
+        flashColor = null;
         const btn = document.getElementById("btnRunUpgrade");
         btn.disabled = true;
-        document.getElementById("upSubText").textContent = "Прокачка...";
 
         try {
-          const payload = stakeMode === "item"
-            ? { initData: tg.initData, mode: "item", source_item_id: selectedItemId, target_id: selected.id }
-            : { initData: tg.initData, mode: "stars", bet_stars: stake, target_id: selected.id };
-
           const r = await fetch(apiUrl("/api/upgrade_spin"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+              initData: tg.initData,
+              bet_stars: bet,
+              target_id: selected.id
+            })
           });
           const d = await r.json();
           if (!d.ok) {
             busy = false;
             btn.disabled = false;
-            document.getElementById("upSubText").textContent = "Шанс успеха";
             toast(d.message || "Ошибка апгрейда");
             return;
           }
 
-          const finalAngle = 360 * 6 + (Number(d.roll || 50) / 100) * 360;
-          await animatePointer(finalAngle);
+          const finalDeg = 360 * 6 + (Number(d.roll || 50) / 100) * 360;
+          await animatePointer(finalDeg);
 
           appState.stars_balance = d.stars_balance;
+          appState.wager_left = d.wager_left;
+          appState.withdrawable_stars = d.withdrawable_stars;
           updateStarsDisplay(appState.stars_balance);
           saveCache(appState);
 
@@ -465,26 +489,20 @@
           btn.disabled = false;
 
           if (d.won) {
-            dialFlashColor = "#34d399";
-            syncDial();
+            flashColor = "#7dd3fc";
+            syncUI();
             playWin();
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
-            document.getElementById("upSubText").textContent = "Успех!";
-            toast(`Апгрейд прошёл! ${selected.name} в инвентаре`);
+            toast(`Апгрейд успешен! +${selected.stars} ★ на баланс`);
           } else {
-            dialFlashColor = "#ef4444";
-            syncDial();
+            flashColor = "#f43f5e";
+            syncUI();
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
-            document.getElementById("upSubText").textContent = "Не повезло";
             toast("Апгрейд не зашёл");
           }
-
-          await session.syncFromServer();
-          if (stakeMode === "item") renderInventoryPicker();
         } catch (_) {
           busy = false;
           btn.disabled = false;
-          document.getElementById("upSubText").textContent = "Шанс успеха";
           toast("Ошибка сети");
         }
       };

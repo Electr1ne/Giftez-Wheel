@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GiftezUp — Мои заявки</title>
+  <title>GiftezUp — Выводы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
 </head>
@@ -13,11 +13,11 @@
 
     <div class="section-card fade-in">
       <div class="card-head">
-        <h2>Мои заявки</h2>
+        <h2>Заявки на вывод</h2>
         <button type="button" class="btn-mini-refresh" id="reloadReqsBtn">Обновить</button>
       </div>
       <div class="note-box">
-        Срок выдачи подарков: <b>от 10 минут до 14 дней</b>. При обмене в звёзды Telegram удерживает стандартную комиссию (Мишка 15 → 13 ★, Роза 25 → 21 ★).
+        Вывод оформляется через кнопку <b>«Кошелёк» → «Вывод»</b> ровными пакетами: <b>15 ★ → 13 ★</b>, <b>25 ★ → 21 ★</b>, <b>50 ★ → 43 ★</b>, <b>100 ★ → 85 ★</b>.
       </div>
       <div class="items-stack" id="requestsStack"></div>
     </div>
@@ -34,22 +34,18 @@
         const wrap = document.getElementById("requestsStack");
 
         if (!list.length) {
-          wrap.innerHTML = `<div class="empty-box">Активных заявок пока нет</div>`;
+          wrap.innerHTML = `<div class="empty-box">Заявок на вывод пока нет</div>`;
           return;
         }
 
         wrap.innerHTML = list
           .map((req) => {
-            const meta = PRIZE_META[req.prize] || { name: req.name || req.prize, stars: 0, exchangeStars: 0 };
             const isDone = req.status === "done";
             return `
               <div class="list-row">
-                <div class="row-left">
-                  <img src="${getImageSrc(req.prize)}" onerror="this.src=getFallbackSrc('${escapeHtml(req.prize)}')" alt="" />
-                  <div>
-                    <div class="row-title">${escapeHtml(meta.name)} · @${escapeHtml(req.username)}</div>
-                    <div class="row-sub">#${escapeHtml(req.id)}</div>
-                  </div>
+                <div>
+                  <div class="row-title">${Number(req.cost_stars)} ★ → к выдаче ${Number(req.payout_stars)} ★</div>
+                  <div class="row-sub">${escapeHtml(req.breakdown || "")} · @${escapeHtml(req.username)}</div>
                 </div>
                 <span class="req-badge ${isDone ? "done" : "processing"}">${isDone ? "Выполнено" : "В обработке"}</span>
               </div>

@@ -16,7 +16,7 @@ function initDedicatedCasePage(caseId) {
   let fastSpin = localStorage.getItem("giftez_fast_spin") === "1";
 
   const sprites = {};
-  ["bear", "rose", "heart", "giftbox", "rocket", "ring", "nothing"].forEach((k) => {
+  ["bear", "rose", "heart", "gift", "bottle", "cake", "rocket", "ring", "nothing"].forEach((k) => {
     const im = new Image();
     im.onerror = () => {
       if (im.src !== getFallbackSrc(k)) im.src = getFallbackSrc(k);
@@ -34,7 +34,6 @@ function initDedicatedCasePage(caseId) {
 
   resolveCase();
 
-  // Настройка Canvas-ленты
   const canvas = document.getElementById("rouletteCanvas");
   const ctx = canvas.getContext("2d");
   const ITEM_W = 114;
@@ -51,7 +50,7 @@ function initDedicatedCasePage(caseId) {
   function buildSlots(winObj = null) {
     const pool = (caseCfg && caseCfg.items && caseCfg.items.length)
       ? caseCfg.items
-      : [{ label: "Мишка", type: "gift", prize: "bear" }, { label: "Роза", type: "gift", prize: "rose" }];
+      : [{ label: "Мишка (15 ★)", type: "gift", gift: "bear", icon: "bear.png" }];
 
     wheelSlots = [];
     for (let i = 0; i < TOTAL_SLOTS; i++) {
@@ -62,7 +61,8 @@ function initDedicatedCasePage(caseId) {
         wheelSlots.push({
           label: sample.label,
           type: sample.type || "gift",
-          prize: sample.prize || "bear"
+          gift: sample.gift || "bear",
+          icon: sample.icon || "bear.png"
         });
       }
     }
@@ -109,18 +109,18 @@ function initDedicatedCasePage(caseId) {
       const y = cy - ch / 2;
 
       const slot = wheelSlots[i];
-      const isNothing = slot.type === "nothing" || slot.prize === "nothing";
-      const isStars = slot.type === "stars" || slot.prize === "stars";
+      const isNothing = slot.type === "nothing" || slot.gift === "nothing";
+      const isStars = slot.type === "stars" || slot.icon === "star";
 
       ctx.save();
       roundRect(x, y, cw, ch, 15 * scale);
 
       if (isStars) {
         ctx.fillStyle = "rgba(251, 191, 36, 0.14)";
-        ctx.strokeStyle = "rgba(251, 191, 36, 0.5)";
+        ctx.strokeStyle = "rgba(251, 191, 36, 0.52)";
       } else if (!isNothing) {
-        ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-        ctx.strokeStyle = "rgba(125, 211, 252, 0.55)";
+        ctx.fillStyle = "rgba(56, 189, 248, 0.16)";
+        ctx.strokeStyle = "rgba(125, 211, 252, 0.56)";
       } else {
         ctx.fillStyle = "rgba(255, 255, 255, 0.035)";
         ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
@@ -131,12 +131,12 @@ function initDedicatedCasePage(caseId) {
 
       if (isStars) {
         ctx.textAlign = "center";
-        ctx.font = `900 ${Math.round(24 * scale)}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.font = `900 ${Math.round(25 * scale)}px -apple-system, BlinkMacSystemFont, sans-serif`;
         ctx.fillStyle = "#fde047";
         ctx.fillText("★", ix, y + 54 * scale);
       } else {
-        const spKey = sprites[slot.prize] ? slot.prize : "bear";
-        const sp = sprites[spKey];
+        const cleanKey = String(slot.gift || slot.icon || "bear").replace(".png", "");
+        const sp = sprites[cleanKey] || sprites.bear;
         const sz = 52 * scale;
         if (sp && sp.complete && sp.naturalWidth > 0) {
           ctx.drawImage(sp, ix - sz / 2, y + 18 * scale, sz, sz);
@@ -144,7 +144,7 @@ function initDedicatedCasePage(caseId) {
       }
 
       ctx.textAlign = "center";
-      ctx.font = `700 ${Math.round(12 * scale)}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.font = `700 ${Math.round(11.5 * scale)}px -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.fillStyle = isStars ? "#fef08a" : (isNothing ? "#94a3b8" : "#e0f2fe");
       ctx.fillText(slot.label || "Приз", ix, y + ch - 18 * scale);
 
@@ -168,7 +168,7 @@ function initDedicatedCasePage(caseId) {
       buildSlots(winObj);
       const start = 2 * STEP;
       const target = WIN_SLOT * STEP + (Math.random() - 0.5) * 30;
-      const duration = fastSpin ? 1850 : 6200;
+      const duration = fastSpin ? 1850 : 6000;
       const settleDuration = fastSpin ? 150 : 340;
       const t0 = performance.now();
       lastTickSlot = Math.round(start / STEP);
@@ -220,25 +220,25 @@ function initDedicatedCasePage(caseId) {
     document.title = `GiftezUp — ${caseCfg.name}`;
     document.getElementById("caseTitle").textContent = caseCfg.name;
     document.getElementById("caseSub").textContent = caseCfg.is_daily
-      ? "Бесплатно раз в 24 часа · Мишка, Роза и 1–20 ★"
-      : `Стоимость: ${Number(caseCfg.price)} ★ · Перекрут дропа за 3 ★`;
+      ? "Бесплатно раз в 24 часа · Награда зачисляется в ★"
+      : `Стоимость: ${Number(caseCfg.price)} ★ · Перекрут за 3 ★`;
 
     const lootBox = document.getElementById("caseLootGrid");
     if (lootBox) {
       lootBox.innerHTML = (caseCfg.items || [])
         .map((item) => {
-          const isStars = item.type === "stars";
-          const imgKey = isStars ? "bear" : (item.prize || "bear");
+          const isStars = item.type === "stars" || item.icon === "star";
+          const imgKey = isStars ? "bear" : (item.gift || item.icon || "bear");
           return `
-            <div class="inv-tile" style="padding:10px 8px;">
-              <div class="inv-tile-art" style="width:48px;height:48px;">
+            <div class="inv-tile">
+              <div class="inv-tile-art">
                 ${
                   isStars
                     ? `<span style="font-size:22px;font-weight:900;color:#fde047;">★</span>`
-                    : `<img src="${getImageSrc(imgKey)}" onerror="this.src=getFallbackSrc('${imgKey}')" style="width:36px;height:36px;" alt="" />`
+                    : `<img src="${getImageSrc(imgKey)}" onerror="this.src=getFallbackSrc('${escapeHtml(imgKey)}')" alt="" />`
                 }
               </div>
-              <div class="inv-tile-title" style="font-size:12.5px;">${escapeHtml(item.label)}</div>
+              <div class="inv-tile-title">${escapeHtml(item.label)}</div>
             </div>
           `;
         })
@@ -253,7 +253,7 @@ function initDedicatedCasePage(caseId) {
     if (pendingDropId && !caseCfg.is_daily) {
       area.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <button type="button" class="btn-main" id="btnAcceptDrop" ${isSpinning ? "disabled" : ""}>Забрать награду</button>
+          <button type="button" class="btn-main" id="btnAcceptDrop" ${isSpinning ? "disabled" : ""}>Забрать звёзды на баланс</button>
           <button type="button" class="btn-main gold-btn" id="btnRerollDrop" ${isSpinning ? "disabled" : ""}>Не понравилось — перекрутить за 3 ★</button>
         </div>
       `;
@@ -315,20 +315,18 @@ function initDedicatedCasePage(caseId) {
       document.body.appendChild(modal);
     }
 
-    const isStars = drop.drop_type === "stars";
     const isNothing = drop.drop_type === "nothing";
-    const imgKey = isStars ? "bear" : (drop.prize || "nothing");
+    const isStars = drop.drop_type === "stars";
+    const imgKey = isStars ? "bear" : (drop.gift_id || drop.icon || "nothing");
 
     document.getElementById("resModalImg").innerHTML = isStars
       ? `<span style="font-size:32px;font-weight:900;color:#fde047;">★</span>`
-      : `<img src="${getImageSrc(imgKey)}" onerror="this.src=getFallbackSrc('${imgKey}')" alt="" />`;
+      : `<img src="${getImageSrc(imgKey)}" onerror="this.src=getFallbackSrc('${escapeHtml(imgKey)}')" alt="" />`;
 
     document.getElementById("resModalTitle").textContent = isNothing ? "Ничего не выпало" : `Выпало: ${drop.label}`;
     document.getElementById("resModalDesc").textContent = isNothing
       ? "В этот раз пустой слот. Попробуй снова!"
-      : (isStars
-          ? "Звёзды начислены на твой баланс GiftezUp."
-          : "Подарок появится в твоём инвентаре!");
+      : `На ваш баланс зачислено +${Number(drop.stars_amount || 0)} ★.`;
 
     document.getElementById("resModalOk").onclick = () => modal.classList.remove("open");
     modal.classList.add("open");
@@ -368,6 +366,8 @@ function initDedicatedCasePage(caseId) {
       }
 
       appState.stars_balance = d.stars_balance;
+      if (typeof d.wager_left === "number") appState.wager_left = d.wager_left;
+      if (typeof d.withdrawable_stars === "number") appState.withdrawable_stars = d.withdrawable_stars;
       if (d.next_spin_at) appState.next_spin_at = d.next_spin_at;
       updateStarsDisplay(appState.stars_balance);
       saveCache(appState);
@@ -376,7 +376,8 @@ function initDedicatedCasePage(caseId) {
       await animateWheel({
         label: drop.label,
         type: drop.drop_type,
-        prize: drop.prize || "nothing"
+        gift: drop.gift_id || "nothing",
+        icon: drop.icon || "nothing.png"
       });
 
       isSpinning = false;
@@ -390,7 +391,7 @@ function initDedicatedCasePage(caseId) {
         pendingDropId = d.drop_id;
         if (drop.drop_type !== "nothing") playWin();
         renderControls();
-        toast(`Выпало: ${drop.label}. Забери или перекрути за 3 ★!`);
+        toast(`Выпало: ${drop.label}. Забери ★ или перекрути за 3 ★!`);
       }
     } catch (_) {
       isSpinning = false;
@@ -419,6 +420,8 @@ function initDedicatedCasePage(caseId) {
       }
 
       appState.stars_balance = d.stars_balance;
+      if (typeof d.wager_left === "number") appState.wager_left = d.wager_left;
+      if (typeof d.withdrawable_stars === "number") appState.withdrawable_stars = d.withdrawable_stars;
       updateStarsDisplay(appState.stars_balance);
       saveCache(appState);
 
@@ -426,7 +429,8 @@ function initDedicatedCasePage(caseId) {
       await animateWheel({
         label: drop.label,
         type: drop.drop_type,
-        prize: drop.prize || "nothing"
+        gift: drop.gift_id || "nothing",
+        icon: drop.icon || "nothing.png"
       });
 
       isSpinning = false;
@@ -455,11 +459,12 @@ function initDedicatedCasePage(caseId) {
       const d = await r.json();
       if (d.ok) {
         appState.stars_balance = d.stars_balance;
+        if (typeof d.wager_left === "number") appState.wager_left = d.wager_left;
+        if (typeof d.withdrawable_stars === "number") appState.withdrawable_stars = d.withdrawable_stars;
         updateStarsDisplay(appState.stars_balance);
         saveCache(appState);
         playWin();
-        toast("Награда забрана!");
-        await session.syncFromServer();
+        toast("Звёзды зачислены на баланс!");
       }
     } catch (_) {
       toast("Ошибка сети");

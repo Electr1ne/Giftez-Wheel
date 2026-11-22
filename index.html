@@ -20,20 +20,20 @@
       <div class="status-pill no" id="subStatusPill">Проверка...</div>
     </div>
 
-    <!-- Промо-баннер ежедневного кейса (отдельная страница case-daily.html) -->
+    <!-- Промо-баннер ежедневного кейса -->
     <a class="winter-hero fade-in" href="case-daily.html">
       <div class="hero-left">
         <div class="hero-chip" id="dailyChipText">БЕСПЛАТНО РАЗ В 24Ч</div>
         <h2>Ежедневный кейс</h2>
-        <p>Внутри: Мишка, Роза и от 1 до 20 ★ на баланс</p>
+        <p>Внутри: Мишка (15 ★), Роза (25 ★) и до 10 ★ на баланс</p>
         <span class="hero-open-btn" id="dailyHeroBtn">Открыть кейс &gt;</span>
       </div>
       <div class="hero-right">
-        <img src="./bear.png" onerror="this.src=getFallbackSrc('bear')" alt="Ежедневный кейс" />
+        <img src="./daily.png" onerror="this.src=getFallbackSrc('gift')" alt="Ежедневный кейс" />
       </div>
     </a>
 
-    <!-- Раздел Игры (только Апгрейдер) -->
+    <!-- Раздел Игры -->
     <div class="sec-row fade-in">
       <div class="sec-title">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2">
@@ -47,7 +47,7 @@
     <a class="upgrade-card-banner fade-in" href="upgrader.html">
       <div>
         <h3>Апгрейдер</h3>
-        <p>Прокачай звёзды или подарок с выбором шанса</p>
+        <p>Прокачай ставку в звёзды с выбором множителя</p>
       </div>
       <div class="upgrade-badge-box">
         <span>★</span>
@@ -55,14 +55,14 @@
           <line x1="5" y1="12" x2="19" y2="12"/>
           <polyline points="12 5 19 12 12 19"/>
         </svg>
-        <span>🎁</span>
+        <img src="./ring.png" onerror="this.src=getFallbackSrc('ring')" style="width:20px;height:20px;object-fit:contain;" alt="" />
       </div>
     </a>
 
-    <!-- Раздел Кейсы (сетка 2 в ряд, каждый кейс открывает свою страницу) -->
+    <!-- Раздел Зимние кейсы (2 в ряд) -->
     <div class="sec-row fade-in">
       <div class="sec-title">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2.2">
           <rect x="3" y="8" width="18" height="13" rx="2"/>
           <path d="M12 8v13"/>
           <path d="M3 12h18"/>
@@ -81,9 +81,9 @@
       const PAGE_MAP = {
         daily: "case-daily.html",
         starter: "case-starter.html",
-        romance: "case-romance.html",
-        cosmos: "case-cosmos.html",
-        luxury: "case-luxury.html"
+        morozniy: "case-morozniy.html",
+        sever: "case-sever.html",
+        newyear: "case-newyear.html"
       };
 
       let appState = null;
@@ -131,14 +131,13 @@
 
         grid.innerHTML = paidCases
           .map((c) => {
-            const href = PAGE_MAP[c.id] || `case.html?id=${encodeURIComponent(c.id)}`;
-            const fbKey = c.id === "romance" ? "rose" : (c.id === "cosmos" ? "rocket" : (c.id === "luxury" ? "ring" : "bear"));
-            const tierCls = c.id === "luxury" ? "tier-gold" : (c.id === "romance" ? "tier-pine" : "");
+            const href = PAGE_MAP[c.id] || `case-${encodeURIComponent(c.id)}.html`;
+            const tierCls = c.id === "newyear" ? "tier-gold" : (c.id === "morozniy" ? "tier-indigo" : "");
             return `
               <a class="case-card-link ${tierCls}" href="${href}">
                 <span class="case-tag">${escapeHtml(c.badge || "ЗИМА")}</span>
                 <div class="case-art">
-                  <img src="./${escapeHtml(c.icon || "bear.png")}" onerror="this.src=getFallbackSrc('${fbKey}')" alt="${escapeHtml(c.name)}" />
+                  <img src="./${escapeHtml(c.icon || "starter.png")}" onerror="this.src=getFallbackSrc('${escapeHtml(c.id)}')" alt="${escapeHtml(c.name)}" />
                 </div>
                 <div class="case-name">${escapeHtml(c.name)}</div>
                 <div class="case-btn-pill">${Number(c.price)} ★</div>

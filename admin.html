@@ -26,7 +26,7 @@
           <div class="row-title">Техработы</div>
           <div class="row-sub">Исправление ошибок и улучшения</div>
         </div>
-        <button type="button" class="btn-soft" id="btnModeMaint">...</button>
+        <button type="button" class="btn-soft" id="btnModeMaint">Загрузка...</button>
       </div>
 
       <div class="list-row">
@@ -34,7 +34,7 @@
           <div class="row-title">Обновление</div>
           <div class="row-sub">Полноценная выкатка обновления</div>
         </div>
-        <button type="button" class="btn-soft" id="btnModeUpd">...</button>
+        <button type="button" class="btn-soft" id="btnModeUpd">Загрузка...</button>
       </div>
     </div>
 
@@ -46,7 +46,7 @@
       <input type="text" class="field-input" id="admTargetUser" placeholder="@username игрока" />
       <input type="number" class="field-input" id="admTargetStars" placeholder="Количество звёзд (напр. 10)" />
       <div class="grid-2">
-        <button type="button" class="btn-green-sm" id="admGiveBtn">Выдать ★</button>
+        <button type="button" class="btn-ice-sm" id="admGiveBtn">Выдать ★</button>
         <button type="button" class="btn-red-sm" id="admTakeBtn">Списать ★</button>
       </div>
       <div class="grid-2">
@@ -77,10 +77,10 @@
       <button type="button" class="btn-main" id="admBroadcastBtn">Отправить всем</button>
     </div>
 
-    <!-- Заявки -->
+    <!-- Заявки на вывод -->
     <div class="section-card fade-in">
       <div class="card-head">
-        <h2>Заявки на подарки</h2>
+        <h2>Заявки на вывод ★</h2>
         <button type="button" class="btn-mini-refresh" id="admReloadReqsBtn">Обновить</button>
       </div>
       <div class="items-stack" id="admReqsList">
@@ -97,97 +97,111 @@
       function syncModeLabels() {
         if (!appState) return;
         const m = appState.system_modes || { maintenance: false, update: false };
-        document.getElementById("btnModeMaint").textContent = m.maintenance ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
-        document.getElementById("btnModeUpd").textContent = m.update ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
+        const btnM = document.getElementById("btnModeMaint");
+        const btnU = document.getElementById("btnModeUpd");
+        btnM.textContent = m.maintenance ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
+        btnU.textContent = m.update ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
+        btnM.style.borderColor = m.maintenance ? "var(--ice-bright)" : "";
+        btnU.style.borderColor = m.update ? "var(--ice-bright)" : "";
       }
 
-      async function toggleMode(modeName) {
-        if (!tg?.initData || !appState) return;
+      async function adminPost(path, payload = {}) {
+        const initData = window.Telegram?.WebApp?.initData || "";
+        if (!initData) {
+          toast("Открой админку внутри Telegram Mini App");
+          return null;
+        }
+        try {
+          const r = await fetch(apiUrl(path), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, ...payload })
+          });
+          const data = await r.json();
+          if (!r.ok || !data.ok) {
+            toast(data.message || `Ошибка сервера (${r.status})`);
+            return null;
+          }
+          return data;
+        } catch (err) {
+          toast("Сервер Bothost недоступен");
+          return null;
+        }
+      }
+
+      async function toggleMode(modeName, btnEl) {
+        if (!appState) return;
+        btnEl.disabled = true;
         const cur = Boolean((appState.system_modes || {})[modeName]);
-        const r = await fetch(apiUrl("/api/admin/mode"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: tg.initData, mode: modeName, enabled: !cur })
-        });
-        const d = await r.json();
-        if (d.ok) {
+        const d = await adminPost("/api/admin/mode", { mode: modeName, enabled: !cur });
+        btnEl.disabled = false;
+        if (d && d.system_modes) {
           appState.system_modes = d.system_modes;
           saveCache(appState);
           syncModeLabels();
-          toast("Режим обновлён");
+          toast(
+            modeName === "update"
+              ? `Обновление: ${d.system_modes.update ? "ВКЛ" : "ВЫКЛ"}`
+              : `Техработы: ${d.system_modes.maintenance ? "ВКЛ" : "ВЫКЛ"}`
+          );
         }
       }
 
       async function loadRequests() {
-        if (!tg?.initData) return;
         const box = document.getElementById("admReqsList");
-        try {
-          const r = await fetch(apiUrl("/api/admin/requests"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ initData: tg.initData })
-          });
-          const d = await r.json();
-          if (!d.ok || !d.requests.length) {
-            box.innerHTML = `<div class="empty-box">Активных заявок нет</div>`;
-            return;
-          }
+        const d = await adminPost("/api/admin/requests", {});
+        if (!d) return;
+        if (!Array.isArray(d.requests) || !d.requests.length) {
+          box.innerHTML = `<div class="empty-box">Активных заявок на вывод нет</div>`;
+          return;
+        }
 
-          box.innerHTML = d.requests
-            .map(
-              (req) => `
-                <div class="list-row" style="flex-direction:column;align-items:stretch;gap:8px;">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                    <div class="row-left">
-                      <img src="${getImageSrc(req.prize)}" onerror="this.src=getFallbackSrc('${escapeHtml(req.prize)}')" alt="" />
-                      <div>
-                        <div class="row-title">${escapeHtml(req.name || req.prize)}</div>
-                        <div class="row-sub">@${escapeHtml(req.username)} · ID ${req.user_id}</div>
-                      </div>
-                    </div>
-                    <span class="req-badge ${req.status === "done" ? "done" : "processing"}">${req.status === "done" ? "Выполнено" : "В работе"}</span>
+        box.innerHTML = d.requests
+          .map(
+            (req) => `
+              <div class="list-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <div>
+                    <div class="row-title">${Number(req.cost_stars)} ★ → Выдать: ${Number(req.payout_stars)} ★</div>
+                    <div class="row-sub">${escapeHtml(req.breakdown)}</div>
+                    <div class="row-sub">@${escapeHtml(req.username)} · ID ${req.user_id}</div>
                   </div>
-                  <div class="grid-2">
-                    <button type="button" class="btn-green-sm" data-done-id="${escapeHtml(req.id)}">Выдано</button>
-                    <button type="button" class="btn-red-sm" data-del-id="${escapeHtml(req.id)}">Удалить</button>
-                  </div>
+                  <span class="req-badge ${req.status === "done" ? "done" : "processing"}">${req.status === "done" ? "Выполнено" : "В работе"}</span>
                 </div>
-              `
-            )
-            .join("");
+                <div class="grid-2">
+                  <button type="button" class="btn-ice-sm" data-done-id="${escapeHtml(req.id)}">Выдано</button>
+                  <button type="button" class="btn-red-sm" data-del-id="${escapeHtml(req.id)}">Удалить</button>
+                </div>
+              </div>
+            `
+          )
+          .join("");
 
-          box.querySelectorAll("[data-done-id]").forEach((b) => {
-            b.onclick = async () => {
-              const id = b.getAttribute("data-done-id");
-              const res = await fetch(apiUrl("/api/admin/complete"), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ initData: tg.initData, request_id: id })
-              });
-              const out = await res.json();
-              if (out.ok) {
-                toast("Отмечено как выдано");
-                loadRequests();
-              }
-            };
-          });
+        box.querySelectorAll("[data-done-id]").forEach((b) => {
+          b.onclick = async () => {
+            const id = b.getAttribute("data-done-id");
+            b.disabled = true;
+            const out = await adminPost("/api/admin/complete", { request_id: id });
+            b.disabled = false;
+            if (out) {
+              toast("Отмечено как выдано");
+              loadRequests();
+            }
+          };
+        });
 
-          box.querySelectorAll("[data-del-id]").forEach((b) => {
-            b.onclick = async () => {
-              const id = b.getAttribute("data-del-id");
-              const res = await fetch(apiUrl("/api/admin/delete_request"), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ initData: tg.initData, request_id: id })
-              });
-              const out = await res.json();
-              if (out.ok) {
-                toast("Заявка удалена из базы");
-                loadRequests();
-              }
-            };
-          });
-        } catch (_) {}
+        box.querySelectorAll("[data-del-id]").forEach((b) => {
+          b.onclick = async () => {
+            const id = b.getAttribute("data-del-id");
+            b.disabled = true;
+            const out = await adminPost("/api/admin/delete_request", { request_id: id });
+            b.disabled = false;
+            if (out) {
+              toast("Заявка удалена из базы");
+              loadRequests();
+            }
+          };
+        });
       }
 
       const session = initGiftezPage("admin", {
@@ -202,78 +216,87 @@
       syncModeLabels();
       loadRequests();
 
-      document.getElementById("btnModeMaint").onclick = () => toggleMode("maintenance");
-      document.getElementById("btnModeUpd").onclick = () => toggleMode("update");
+      const btnMaint = document.getElementById("btnModeMaint");
+      const btnUpd = document.getElementById("btnModeUpd");
+      btnMaint.onclick = () => toggleMode("maintenance", btnMaint);
+      btnUpd.onclick = () => toggleMode("update", btnUpd);
       document.getElementById("admReloadReqsBtn").onclick = loadRequests;
 
-      async function mutateStars(sign) {
+      async function mutateStars(sign, btnEl) {
         const username = document.getElementById("admTargetUser").value.trim();
         const val = Math.abs(Number(document.getElementById("admTargetStars").value || 0));
         if (!username || !val) {
           toast("Укажи @username и сумму");
           return;
         }
-        const r = await fetch(apiUrl("/api/admin/user_stars"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: tg.initData, username, delta: sign * val })
-        });
-        const d = await r.json();
-        toast(d.message || "Готово");
+        btnEl.disabled = true;
+        const d = await adminPost("/api/admin/user_stars", { username, delta: sign * val });
+        btnEl.disabled = false;
+        if (d) {
+          toast(d.message || "Готово");
+          await session.syncFromServer();
+        }
       }
 
-      document.getElementById("admGiveBtn").onclick = () => mutateStars(1);
-      document.getElementById("admTakeBtn").onclick = () => mutateStars(-1);
+      const btnGive = document.getElementById("admGiveBtn");
+      const btnTake = document.getElementById("admTakeBtn");
+      btnGive.onclick = () => mutateStars(1, btnGive);
+      btnTake.onclick = () => mutateStars(-1, btnTake);
 
-      document.getElementById("admResetOneBtn").onclick = async () => {
+      const btnResetOne = document.getElementById("admResetOneBtn");
+      btnResetOne.onclick = async () => {
         const username = document.getElementById("admTargetUser").value.trim();
         if (!username) {
           toast("Введи @username");
           return;
         }
-        const r = await fetch(apiUrl("/api/admin/reset_user_timer"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: tg.initData, username })
-        });
-        const d = await r.json();
-        toast(d.message || "Готово");
+        btnResetOne.disabled = true;
+        const d = await adminPost("/api/admin/reset_user_timer", { username });
+        btnResetOne.disabled = false;
+        if (d) {
+          toast(d.message || "Таймер игрока сброшен");
+          await session.syncFromServer();
+        }
       };
 
-      document.getElementById("admResetAllBtn").onclick = async () => {
-        const r = await fetch(apiUrl("/api/admin/reset_all_timers"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: tg.initData })
-        });
-        const d = await r.json();
-        toast(d.ok ? `Таймер сброшен у ${d.updated_users} игроков` : "Ошибка");
+      const btnResetAll = document.getElementById("admResetAllBtn");
+      btnResetAll.onclick = async () => {
+        btnResetAll.disabled = true;
+        const d = await adminPost("/api/admin/reset_all_timers", {});
+        btnResetAll.disabled = false;
+        if (d) {
+          appState.next_spin_at = 0;
+          saveCache(appState);
+          toast(`Таймер сброшен у ${d.updated_users ?? 0} игроков`);
+          await session.syncFromServer();
+        }
       };
 
-      document.getElementById("admPromoCreateBtn").onclick = async () => {
+      const btnPromo = document.getElementById("admPromoCreateBtn");
+      btnPromo.onclick = async () => {
         const code = document.getElementById("admPromoCode").value.trim();
         const reward_stars = Number(document.getElementById("admPromoStars").value || 0);
         const max_uses = Number(document.getElementById("admPromoUses").value || 1);
-        const r = await fetch(apiUrl("/api/admin/create_promo"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: tg.initData, code, reward_stars, max_uses })
-        });
-        const d = await r.json();
-        if (d.ok) document.getElementById("admPromoCode").value = "";
-        toast(d.message || "Ошибка");
+        btnPromo.disabled = true;
+        const d = await adminPost("/api/admin/create_promo", { code, reward_stars, max_uses });
+        btnPromo.disabled = false;
+        if (d) {
+          document.getElementById("admPromoCode").value = "";
+          toast(d.message || "Промокод создан");
+        }
       };
 
-      document.getElementById("admBroadcastBtn").onclick = async () => {
+      const btnBroadcast = document.getElementById("admBroadcastBtn");
+      btnBroadcast.onclick = async () => {
         const text = document.getElementById("admBroadcastText").value.trim();
-        if (!text) return;
-        const r = await fetch(apiUrl("/api/admin/broadcast"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: tg.initData, text })
-        });
-        const d = await r.json();
-        if (d.ok) {
+        if (!text) {
+          toast("Введи текст рассылки");
+          return;
+        }
+        btnBroadcast.disabled = true;
+        const d = await adminPost("/api/admin/broadcast", { text });
+        btnBroadcast.disabled = false;
+        if (d) {
           document.getElementById("admBroadcastText").value = "";
           toast(`Отправлено: ${d.sent}/${d.total}`);
         }
