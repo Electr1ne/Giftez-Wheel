@@ -2,15 +2,13 @@ const GIFTEZ_CONFIG = {
   BOT_API_URL: "https://bot-1795292735-3673-electr1ne.bothost.tech",
   CHANNEL_USERNAME: "gift_e_z",
   ADMIN_IDS: [963968579],
-  CACHE_KEY: "giftezup_winter_cache_v5",
+  CACHE_KEY: "giftezup_winter_cache_v6",
   IMAGES: {
-    // Кейсы
     daily: "./daily.png",
     starter: "./starter.png",
     morozniy: "./morozniy.png",
     sever: "./sever.png",
     newyear: "./newyear.png",
-    // Подарки
     rose: "./rose.png",
     bear: "./bear.png",
     gift: "./gift.png",
@@ -24,14 +22,14 @@ const GIFTEZ_CONFIG = {
 };
 
 const GIFTS_CATALOG = {
-  bear:   { id: "bear",   name: "Мишка",   stars: 15,  icon: "bear.png" },
-  heart:  { id: "heart",  name: "Сердце",  stars: 15,  icon: "heart.png" },
-  rose:   { id: "rose",   name: "Роза",    stars: 25,  icon: "rose.png" },
-  gift:   { id: "gift",   name: "Коробка", stars: 25,  icon: "gift.png" },
-  bottle: { id: "bottle", name: "Напиток", stars: 35,  icon: "bottle.png" },
-  cake:   { id: "cake",   name: "Торт",    stars: 40,  icon: "cake.png" },
-  rocket: { id: "rocket", name: "Ракета",  stars: 50,  icon: "rocket.png" },
-  ring:   { id: "ring",   name: "Кольцо",  stars: 100, icon: "ring.png" }
+  bear:   { id: "bear",   name: "Мишка",   stars: 15,  payout: 13, icon: "bear.png" },
+  heart:  { id: "heart",  name: "Сердце",  stars: 15,  payout: 13, icon: "heart.png" },
+  rose:   { id: "rose",   name: "Роза",    stars: 25,  payout: 21, icon: "rose.png" },
+  gift:   { id: "gift",   name: "Коробка", stars: 25,  payout: 21, icon: "gift.png" },
+  bottle: { id: "bottle", name: "Напиток", stars: 50,  payout: 43, icon: "bottle.png" },
+  cake:   { id: "cake",   name: "Торт",    stars: 50,  payout: 43, icon: "cake.png" },
+  rocket: { id: "rocket", name: "Ракета",  stars: 50,  payout: 43, icon: "rocket.png" },
+  ring:   { id: "ring",   name: "Кольцо",  stars: 100, payout: 85, icon: "ring.png" }
 };
 
 const FALLBACK_SVG = {
@@ -94,7 +92,7 @@ const DEFAULT_CASES_LIST = [
       { label: "6–12 ★", type: "stars", gift: "stars", icon: "star" },
       { label: "Сердце (15 ★)", type: "gift", gift: "heart", icon: "heart.png" },
       { label: "Коробка (25 ★)", type: "gift", gift: "gift", icon: "gift.png" },
-      { label: "Напиток (35 ★)", type: "gift", gift: "bottle", icon: "bottle.png" }
+      { label: "Напиток (50 ★)", type: "gift", gift: "bottle", icon: "bottle.png" }
     ]
   },
   {
@@ -109,7 +107,7 @@ const DEFAULT_CASES_LIST = [
     items: [
       { label: "5–12 ★", type: "stars", gift: "stars", icon: "star" },
       { label: "13–22 ★", type: "stars", gift: "stars", icon: "star" },
-      { label: "Торт (40 ★)", type: "gift", gift: "cake", icon: "cake.png" },
+      { label: "Торт (50 ★)", type: "gift", gift: "cake", icon: "cake.png" },
       { label: "Ракета (50 ★)", type: "gift", gift: "rocket", icon: "rocket.png" },
       { label: "Кольцо (100 ★)", type: "gift", gift: "ring", icon: "ring.png" }
     ]
@@ -126,7 +124,7 @@ const DEFAULT_CASES_LIST = [
     items: [
       { label: "10–24 ★", type: "stars", gift: "stars", icon: "star" },
       { label: "25–45 ★", type: "stars", gift: "stars", icon: "star" },
-      { label: "Торт (40 ★)", type: "gift", gift: "cake", icon: "cake.png" },
+      { label: "Торт (50 ★)", type: "gift", gift: "cake", icon: "cake.png" },
       { label: "Ракета (50 ★)", type: "gift", gift: "rocket", icon: "rocket.png" },
       { label: "Кольцо (100 ★)", type: "gift", gift: "ring", icon: "ring.png" }
     ]
@@ -141,7 +139,6 @@ if (tg) {
   } catch (_) {}
 }
 
-// Предзагрузка основных страниц для мгновенного переключения вкладок
 function prefetchAppPages() {
   const pages = ["index.html", "requests.html", "profile.html", "upgrader.html", "case-daily.html"];
   pages.forEach((href) => {
@@ -189,7 +186,6 @@ function navigateToPage(targetFile) {
   window.location.href = cleanTarget;
 }
 
-// Звук
 let volumePct = Number(localStorage.getItem("giftez_vol_pct") ?? 62);
 let lastNonZeroVolume = volumePct > 0 ? volumePct : 62;
 let audioCtx = null;
@@ -354,7 +350,6 @@ function loadCache() {
   }
 }
 
-// Клиентский расчёт разложения суммы вывода (100->85, 50->43, 25->21, 15->13)
 function decomposeWithdrawClient(cost) {
   const n = Math.floor(Number(cost || 0));
   if (n < 15) return null;
@@ -372,9 +367,9 @@ function decomposeWithdrawClient(cost) {
             const payout = c100 * 85 + c50 * 43 + c25 * 21 + c15 * 13;
             const parts = [];
             if (c100) parts.push(`${c100}× Кольцо (100→85 ★)`);
-            if (c50) parts.push(`${c50}× Ракета (50→43 ★)`);
-            if (c25) parts.push(`${c25}× Роза (25→21 ★)`);
-            if (c15) parts.push(`${c15}× Мишка (15→13 ★)`);
+            if (c50) parts.push(`${c50}× Пакет 50★ (50→43 ★)`);
+            if (c25) parts.push(`${c25}× Роза/Коробка (25→21 ★)`);
+            if (c15) parts.push(`${c15}× Мишка/Сердце (15→13 ★)`);
             best = { cost: n, payout, totalItems, breakdown: parts.join(", ") };
           }
         }
@@ -456,7 +451,6 @@ function mountHeader(state, onRefresh) {
   syncMuteButtonUI();
   document.getElementById("globalMuteBtn").onclick = toggleGlobalMute;
 
-  // Модалка Кошелька (Пополнение / Вывод как на референсе, в ледяном новогоднем стиле)
   let modal = document.getElementById("walletBackdrop");
   if (!modal) {
     modal = document.createElement("div");
@@ -483,7 +477,6 @@ function mountHeader(state, onRefresh) {
           <div class="row-sub" id="wWagerNote" style="margin-top:4px;">Доступно к выводу: 0 ★</div>
         </div>
 
-        <!-- ВКЛАДКА ПОПОЛНЕНИЕ -->
         <div id="wDepositPane" style="display:flex;flex-direction:column;gap:10px;">
           <div class="row-sub">Введите сумму пополнения (от 1 ★)</div>
           <input type="number" class="field-input" id="topupStarsInput" min="1" max="10000" value="50" placeholder="Сумма" />
@@ -509,7 +502,6 @@ function mountHeader(state, onRefresh) {
           <button type="button" class="btn-main" id="confirmTopupBtn">Пополнить через Stars</button>
         </div>
 
-        <!-- ВКЛАДКА ВЫВОД -->
         <div id="wWithdrawPane" style="display:none;flex-direction:column;gap:10px;">
           <div class="row-sub">Курс вывода (пакеты подарков в звёздах)</div>
           <div class="rate-pills-4">
@@ -520,7 +512,7 @@ function mountHeader(state, onRefresh) {
           </div>
 
           <input type="number" class="field-input" id="wdAmountInput" min="15" step="5" value="15" placeholder="Сумма к выводу (напр. 15, 25, 40, 50)" />
-          <div class="note-box" id="wdPreviewBox">К получению: <b>13 ★</b> (1× Мишка)</div>
+          <div class="note-box" id="wdPreviewBox">К получению: <b>13 ★</b></div>
           <div id="wdSuggestionsRow" style="display:none;flex-wrap:wrap;gap:6px;"></div>
 
           <button type="button" class="btn-main" id="confirmWithdrawBtn">Создать заявку на вывод</button>

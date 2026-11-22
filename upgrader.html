@@ -7,78 +7,120 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
   <style>
+    .upgrader-hero-card {
+      background:
+        radial-gradient(circle at 50% 18%, rgba(56, 189, 248, 0.16) 0%, transparent 60%),
+        linear-gradient(180deg, #121c33 0%, #0b1120 100%);
+      border: 1px solid var(--border-strong);
+      border-radius: 24px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    }
+
     .dial-stage {
       position: relative;
-      width: 248px;
-      height: 248px;
-      margin: 2px auto 12px;
+      width: 262px;
+      height: 262px;
+      margin: 0 auto 4px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
+    .dial-ambient-ring {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 1px solid rgba(125, 211, 252, 0.12);
+      box-shadow: inset 0 0 32px rgba(56, 189, 248, 0.08);
+      pointer-events: none;
+    }
+
     .dial-center-disc {
       position: absolute;
-      inset: 54px;
+      inset: 58px;
       border-radius: 50%;
-      background: radial-gradient(circle at 50% 35%, #131c31 0%, #0b101d 100%);
-      border: 1px solid var(--border-strong);
-      box-shadow: inset 0 0 22px rgba(56, 189, 248, 0.14);
+      background: radial-gradient(circle at 50% 25%, #182644 0%, #0a0f1c 100%);
+      border: 1px solid rgba(148, 197, 255, 0.24);
+      box-shadow:
+        0 10px 26px rgba(0, 0, 0, 0.55),
+        inset 0 0 24px rgba(56, 189, 248, 0.16);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
       pointer-events: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .dial-center-disc.spinning {
+      transform: scale(1.03);
+      box-shadow:
+        0 12px 30px rgba(56, 189, 248, 0.26),
+        inset 0 0 30px rgba(56, 189, 248, 0.28);
     }
 
     .dial-mult-big {
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 900;
-      color: var(--ice-bright);
-      letter-spacing: -0.5px;
+      background: linear-gradient(180deg, #ffffff 0%, #7dd3fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.6px;
       line-height: 1.05;
     }
 
     .dial-chance-sub {
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--muted);
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
-    /* Две карточки под барабаном как на референсе */
+    /* Две карточки под барабаном */
     .duel-cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 9px;
+      gap: 10px;
     }
 
     .duel-card {
+      position: relative;
       padding: 12px 10px;
       border-radius: 18px;
-      background: var(--panel-2);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(15, 22, 38, 0.9) 100%);
       border: 1px solid var(--border-strong);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      gap: 6px;
-      min-height: 92px;
+      gap: 5px;
+      min-height: 98px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+      transition: border-color 0.16s ease, transform 0.14s ease;
+    }
+
+    .duel-card.interactive:active {
+      transform: scale(0.98);
     }
 
     .duel-label {
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--muted);
       font-weight: 700;
+      letter-spacing: 0.2px;
     }
 
     .duel-stake-val {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 24px;
+      font-size: 25px;
       font-weight: 900;
     }
 
@@ -86,6 +128,7 @@
       width: 44px;
       height: 44px;
       object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
     }
 
     /* Вкладки Звёзды / Подарки */
@@ -94,8 +137,8 @@
       grid-template-columns: 1fr 1fr;
       gap: 6px;
       padding: 4px;
-      border-radius: 14px;
-      background: #080c16;
+      border-radius: 15px;
+      background: #070b14;
       border: 1px solid var(--border);
     }
 
@@ -108,27 +151,29 @@
       font-size: 13px;
       font-weight: 800;
       cursor: pointer;
+      transition: background 0.16s ease, color 0.16s ease;
     }
 
     .up-tab-btn.active {
-      background: var(--panel-3);
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(99, 102, 241, 0.24));
       color: #fff;
+      border: 1px solid rgba(125, 211, 252, 0.35);
     }
 
     .stake-input-box {
       text-align: center;
-      padding: 8px 10px;
+      padding: 10px 12px;
       border-radius: 16px;
-      background: #080c16;
-      border: 1px solid var(--border);
+      background: #070b14;
+      border: 1px solid var(--border-strong);
     }
 
     .stake-inline-input {
-      width: 120px;
+      width: 130px;
       background: transparent;
       border: none;
       color: #fff;
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 900;
       text-align: center;
       outline: none;
@@ -148,7 +193,7 @@
 
     .gift-target-btn {
       padding: 10px;
-      border-radius: 14px;
+      border-radius: 15px;
       background: var(--panel-2);
       border: 1px solid var(--border);
       color: var(--text);
@@ -157,17 +202,22 @@
       gap: 9px;
       cursor: pointer;
       text-align: left;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+    }
+
+    .gift-target-btn:active {
+      transform: scale(0.97);
     }
 
     .gift-target-btn.active {
       border-color: var(--ice-bright);
-      background: var(--ice-soft);
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.24);
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.18));
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.24);
     }
 
     .gift-target-btn img {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       object-fit: contain;
     }
   </style>
@@ -181,11 +231,12 @@
       <span class="pill-ice">АПГРЕЙДЕР</span>
     </div>
 
-    <div class="section-card fade-in">
-      <!-- Двойной барабан с ледяным указателем сверху как на референсе -->
+    <div class="upgrader-hero-card fade-in">
+      <!-- Двойной барабан с долгим плавным замедлением -->
       <div class="dial-stage">
-        <canvas id="upgradeDial" width="248" height="248"></canvas>
-        <div class="dial-center-disc">
+        <div class="dial-ambient-ring"></div>
+        <canvas id="upgradeDial" width="262" height="262"></canvas>
+        <div class="dial-center-disc" id="dialCenterDisc">
           <div class="dial-mult-big" id="upMultText">x1.50</div>
           <div class="dial-chance-sub" id="upPctText">Шанс 60.0%</div>
         </div>
@@ -193,14 +244,16 @@
 
       <!-- Две карточки: Ваша ставка | Цель апгрейда -->
       <div class="duel-cards">
-        <div class="duel-card">
+        <div class="duel-card interactive" id="focusStakeCard" style="cursor:pointer;">
           <div class="duel-label">Ваша ставка</div>
           <div class="duel-stake-val">
             <span style="color:var(--ice-bright);">★</span>
             <span id="cardStakeNum">10</span>
           </div>
+          <div class="row-sub" id="cardStakeSub">Нажми для ввода</div>
         </div>
-        <div class="duel-card" id="openTargetSheetCard" style="cursor:pointer;">
+
+        <div class="duel-card interactive" id="openTargetSheetCard" style="cursor:pointer;">
           <div class="duel-label">Цель апгрейда</div>
           <img class="duel-target-img" id="cardTargetImg" src="./bear.png" onerror="this.src=getFallbackSrc('bear')" alt="" />
           <div class="row-sub" id="cardTargetName">Мишка · 15 ★</div>
@@ -221,7 +274,7 @@
         <div class="stake-input-box">
           <div class="row-sub" style="margin-bottom:4px;">Введите сумму ставки</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
-            <span style="font-size:22px;font-weight:900;color:var(--ice-bright);">★</span>
+            <span style="font-size:24px;font-weight:900;color:var(--ice-bright);">★</span>
             <input type="number" class="stake-inline-input" id="upBetInput" min="1" value="10" />
           </div>
         </div>
@@ -233,9 +286,9 @@
         </div>
       </div>
 
-      <!-- Панель Подарки (выбор цели апгрейда) -->
+      <!-- Панель Подарки -->
       <div id="paneUpGifts" style="display:none;flex-direction:column;gap:8px;">
-        <div class="row-sub">Выбери целевой подарок (выигрыш зачисляется в ★ на баланс)</div>
+        <div class="row-sub">Выбери целевой подарок (выигрыш начисляется в ★ на баланс)</div>
         <div class="targets-grid" id="upTargetsGrid"></div>
       </div>
     </div>
@@ -249,6 +302,7 @@
       let appState = null;
       let selected = TARGETS[0];
       let pointerDeg = 0;
+      let pointerSpeed = 0;
       let flashColor = null;
       let busy = false;
 
@@ -265,36 +319,75 @@
         return Math.min(80, Math.max(1, Number(((bet / Math.max(1, selected.stars)) * 90).toFixed(1))));
       }
 
-      function drawDial(pct, deg) {
+      function drawDial(pct, deg, speedNorm = 0) {
         const w = canvas.width;
         const cx = w / 2;
         const cy = w / 2;
-        const outerR = 104;
-        const innerR = 82;
+        const outerR = 110;
+        const innerR = 87;
         g.clearRect(0, 0, w, w);
 
         // Внешнее тёмное кольцо
         g.beginPath();
         g.arc(cx, cy, outerR, 0, Math.PI * 2);
-        g.strokeStyle = "rgba(148, 197, 255, 0.11)";
-        g.lineWidth = 14;
+        g.strokeStyle = "rgba(148, 197, 255, 0.1)";
+        g.lineWidth = 15;
         g.stroke();
 
         // Внутреннее кольцо
         g.beginPath();
         g.arc(cx, cy, innerR, 0, Math.PI * 2);
-        g.strokeStyle = "rgba(148, 197, 255, 0.08)";
+        g.strokeStyle = "rgba(148, 197, 255, 0.07)";
         g.lineWidth = 12;
         g.stroke();
 
-        // Ледяная дуга шанса успеха (от -90° по часовой)
+        // Деления по кругу
+        for (let i = 0; i < 48; i++) {
+          const a = (i * 7.5) * (Math.PI / 180);
+          const isMajor = i % 4 === 0;
+          const r1 = outerR + (isMajor ? 10 : 11);
+          const r2 = outerR + (isMajor ? 16 : 14);
+          g.beginPath();
+          g.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+          g.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
+          g.strokeStyle = isMajor ? "rgba(186, 230, 253, 0.32)" : "rgba(148, 197, 255, 0.14)";
+          g.lineWidth = isMajor ? 1.8 : 1.1;
+          g.stroke();
+        }
+
+        // Светящаяся дуга шанса
         if (pct > 0) {
           const start = -Math.PI / 2;
           const end = start + (Math.PI * 2 * (pct / 100));
+          const grad = g.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
+          if (flashColor) {
+            grad.addColorStop(0, flashColor);
+            grad.addColorStop(1, flashColor);
+          } else {
+            grad.addColorStop(0, "#38bdf8");
+            grad.addColorStop(1, "#818cf8");
+          }
+
+          g.save();
+          g.shadowColor = flashColor || "rgba(56, 189, 248, 0.55)";
+          g.shadowBlur = 14;
           g.beginPath();
           g.arc(cx, cy, outerR, start, end);
-          g.strokeStyle = flashColor || "#38bdf8";
-          g.lineWidth = 14;
+          g.strokeStyle = grad;
+          g.lineWidth = 15;
+          g.lineCap = "round";
+          g.stroke();
+          g.restore();
+        }
+
+        // Световой шлейф за стрелкой при быстром вращении
+        if (speedNorm > 0.04) {
+          const tailSpan = Math.min(48, speedNorm * 52) * (Math.PI / 180);
+          const headRad = (-90 + deg) * (Math.PI / 180);
+          g.beginPath();
+          g.arc(cx, cy, outerR, headRad - tailSpan, headRad);
+          g.strokeStyle = `rgba(186, 230, 253, ${Math.min(0.45, speedNorm * 0.5)})`;
+          g.lineWidth = 11;
           g.lineCap = "round";
           g.stroke();
         }
@@ -304,20 +397,19 @@
         g.translate(cx, cy);
         g.rotate((deg * Math.PI) / 180);
 
-        g.shadowColor = "rgba(125, 211, 252, 0.85)";
-        g.shadowBlur = 14;
+        g.shadowColor = "rgba(125, 211, 252, 0.95)";
+        g.shadowBlur = 16;
 
         g.beginPath();
-        g.moveTo(0, -outerR + 18);
-        g.lineTo(-10, -outerR - 6);
-        g.quadraticCurveTo(0, -outerR - 14, 10, -outerR - 6);
+        g.moveTo(0, -outerR + 19);
+        g.lineTo(-10.5, -outerR - 6);
+        g.quadraticCurveTo(0, -outerR - 15, 10.5, -outerR - 6);
         g.closePath();
         g.fillStyle = "#f8fafc";
         g.fill();
 
-        // Ледяная полоска на указателе как на референсе
         g.beginPath();
-        g.rect(-6, -outerR - 6, 12, 3.5);
+        g.rect(-6.5, -outerR - 6, 13, 3.5);
         g.fillStyle = "#38bdf8";
         g.fill();
 
@@ -336,7 +428,7 @@
         document.getElementById("cardTargetImg").src = getImageSrc(selected.icon);
         document.getElementById("cardTargetName").textContent = `${selected.name} · ${selected.stars} ★`;
 
-        drawDial(pct, pointerDeg);
+        drawDial(pct, pointerDeg, pointerSpeed);
       }
 
       function renderTargets() {
@@ -366,28 +458,60 @@
         });
       }
 
+      // Плавная кривая: мягкий разгон в начале + долгое напряжённое замедление в конце
+      function smoothUpgradeCurve(t) {
+        const split = 0.18;
+        const pIn = 2.0;
+        const pOut = 5.2;
+        const w1 = split / pIn;
+        const w2 = (1 - split) / pOut;
+        const sum = w1 + w2;
+        if (t <= split) {
+          return (w1 / sum) * Math.pow(t / split, pIn);
+        }
+        return 1 - (w2 / sum) * Math.pow((1 - t) / (1 - split), pOut);
+      }
+
       function animatePointer(totalDeg) {
         return new Promise((resolve) => {
           const t0 = performance.now();
-          const dur = 3400;
+          const dur = 5800; // Дольше и плавнее замедление
           const pct = getChance();
-          let lastTickStep = 0;
+          const startDeg = pointerDeg % 360;
+          const deltaDeg = totalDeg - startDeg;
+          let lastDeg = startDeg;
+          let lastTickStep = Math.floor(startDeg / 18);
+
+          document.getElementById("dialCenterDisc").classList.add("spinning");
 
           function step(now) {
             const p = Math.min(1, (now - t0) / dur);
-            const ease = 1 - Math.pow(1 - p, 3.8);
-            pointerDeg = totalDeg * ease;
-            const tickStep = Math.floor(pointerDeg / 20);
+            const eased = smoothUpgradeCurve(p);
+            pointerDeg = startDeg + deltaDeg * eased;
+
+            const instDelta = Math.max(0, pointerDeg - lastDeg);
+            lastDeg = pointerDeg;
+            pointerSpeed = Math.min(1, instDelta / 12);
+
+            const tickStep = Math.floor(pointerDeg / 18);
             if (tickStep !== lastTickStep) {
               lastTickStep = tickStep;
               playTick();
-              if (tg?.HapticFeedback && p > 0.08 && p < 0.95) {
+              if (tg?.HapticFeedback && p > 0.06 && p < 0.97) {
                 tg.HapticFeedback.selectionChanged();
               }
             }
-            drawDial(pct, pointerDeg);
-            if (p < 1) requestAnimationFrame(step);
-            else resolve();
+
+            drawDial(pct, pointerDeg, pointerSpeed);
+
+            if (p < 1) {
+              requestAnimationFrame(step);
+            } else {
+              pointerSpeed = 0;
+              drawDial(pct, pointerDeg, 0);
+              document.getElementById("dialCenterDisc").classList.remove("spinning");
+              resolve();
+            }
           }
           requestAnimationFrame(step);
         });
@@ -414,6 +538,10 @@
       document.getElementById("tabUpStars").onclick = () => showTab("stars");
       document.getElementById("tabUpGifts").onclick = () => showTab("gifts");
       document.getElementById("openTargetSheetCard").onclick = () => showTab("gifts");
+      document.getElementById("focusStakeCard").onclick = () => {
+        showTab("stars");
+        document.getElementById("upBetInput").focus();
+      };
 
       document.getElementById("upBetInput").oninput = syncUI;
 
@@ -476,7 +604,8 @@
             return;
           }
 
-          const finalDeg = 360 * 6 + (Number(d.roll || 50) / 100) * 360;
+          // 8 полных оборотов + точный сектор выпадения для длинного напряжённого докрута
+          const finalDeg = 360 * 8 + (Number(d.roll || 50) / 100) * 360;
           await animatePointer(finalDeg);
 
           appState.stars_balance = d.stars_balance;
