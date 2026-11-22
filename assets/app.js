@@ -2,7 +2,7 @@ const GIFTEZ_CONFIG = {
   BOT_API_URL: "https://bot-1795292735-3673-electr1ne.bothost.tech",
   CHANNEL_USERNAME: "gift_e_z",
   ADMIN_IDS: [963968579],
-  CACHE_KEY: "giftezup_winter_cache_v6",
+  CACHE_KEY: "giftezup_winter_cache_v7",
   IMAGES: {
     daily: "./daily.png",
     starter: "./starter.png",
@@ -50,14 +50,15 @@ const DEFAULT_CASES_LIST = [
     page: "case-daily.html",
     name: "Ежедневный",
     price: 0,
+    reroll_price: 0,
     is_daily: true,
     badge: "24Ч",
     icon: "daily.png",
     fallbackKey: "gift",
     items: [
       { label: "Ничего", type: "nothing", gift: "nothing", icon: "nothing.png" },
-      { label: "1–3 ★", type: "stars", gift: "stars", icon: "star" },
-      { label: "4–10 ★", type: "stars", gift: "stars", icon: "star" },
+      { label: "1 ★", type: "stars", gift: "stars", icon: "star" },
+      { label: "2–5 ★", type: "stars", gift: "stars", icon: "star" },
       { label: "Мишка (15 ★)", type: "gift", gift: "bear", icon: "bear.png" },
       { label: "Роза (25 ★)", type: "gift", gift: "rose", icon: "rose.png" }
     ]
@@ -67,13 +68,14 @@ const DEFAULT_CASES_LIST = [
     page: "case-starter.html",
     name: "Стартовый",
     price: 5,
+    reroll_price: 3,
     is_daily: false,
     badge: "ЗИМА",
     icon: "starter.png",
     fallbackKey: "bear",
     items: [
       { label: "1–2 ★", type: "stars", gift: "stars", icon: "star" },
-      { label: "3–6 ★", type: "stars", gift: "stars", icon: "star" },
+      { label: "3–5 ★", type: "stars", gift: "stars", icon: "star" },
       { label: "Мишка (15 ★)", type: "gift", gift: "bear", icon: "bear.png" },
       { label: "Роза (25 ★)", type: "gift", gift: "rose", icon: "rose.png" }
     ]
@@ -83,13 +85,14 @@ const DEFAULT_CASES_LIST = [
     page: "case-morozniy.html",
     name: "Морозный",
     price: 12,
+    reroll_price: 7,
     is_daily: false,
     badge: "ТОП",
     icon: "morozniy.png",
     fallbackKey: "rose",
     items: [
       { label: "2–5 ★", type: "stars", gift: "stars", icon: "star" },
-      { label: "6–12 ★", type: "stars", gift: "stars", icon: "star" },
+      { label: "6–11 ★", type: "stars", gift: "stars", icon: "star" },
       { label: "Сердце (15 ★)", type: "gift", gift: "heart", icon: "heart.png" },
       { label: "Коробка (25 ★)", type: "gift", gift: "gift", icon: "gift.png" },
       { label: "Напиток (50 ★)", type: "gift", gift: "bottle", icon: "bottle.png" }
@@ -100,6 +103,7 @@ const DEFAULT_CASES_LIST = [
     page: "case-sever.html",
     name: "Северный",
     price: 25,
+    reroll_price: 15,
     is_daily: false,
     badge: "NEW",
     icon: "sever.png",
@@ -117,16 +121,17 @@ const DEFAULT_CASES_LIST = [
     page: "case-newyear.html",
     name: "Новогодний",
     price: 50,
+    reroll_price: 30,
     is_daily: false,
     badge: "VIP",
     icon: "newyear.png",
     fallbackKey: "ring",
     items: [
-      { label: "10–24 ★", type: "stars", gift: "stars", icon: "star" },
       { label: "25–45 ★", type: "stars", gift: "stars", icon: "star" },
-      { label: "Торт (50 ★)", type: "gift", gift: "cake", icon: "cake.png" },
-      { label: "Ракета (50 ★)", type: "gift", gift: "rocket", icon: "rocket.png" },
-      { label: "Кольцо (100 ★)", type: "gift", gift: "ring", icon: "ring.png" }
+      { label: "55–85 ★", type: "stars", gift: "stars", icon: "star" },
+      { label: "100–140 ★", type: "stars", gift: "stars", icon: "star" },
+      { label: "Кольцо (100 ★)", type: "gift", gift: "ring", icon: "ring.png" },
+      { label: "Джекпот 200–250 ★", type: "stars", gift: "stars", icon: "star" }
     ]
   }
 ];

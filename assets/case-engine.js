@@ -13,6 +13,7 @@ function initDedicatedCasePage(caseId) {
   let caseCfg = null;
   let isSpinning = false;
   let pendingDropId = null;
+  let currentRerollPrice = 3;
   let fastSpin = localStorage.getItem("giftez_fast_spin") === "1";
 
   const sprites = {};
@@ -30,6 +31,11 @@ function initDedicatedCasePage(caseId) {
       ? appState.cases
       : DEFAULT_CASES_LIST;
     caseCfg = list.find((c) => c.id === caseId) || DEFAULT_CASES_LIST.find((c) => c.id === caseId) || list[0];
+    if (caseCfg && typeof caseCfg.reroll_price === "number") {
+      currentRerollPrice = caseCfg.reroll_price;
+    } else if (caseCfg && !caseCfg.is_daily) {
+      currentRerollPrice = Math.max(1, Math.floor(Number(caseCfg.price || 5) * 0.6));
+    }
   }
 
   resolveCase();
@@ -221,7 +227,12 @@ function initDedicatedCasePage(caseId) {
     document.getElementById("caseTitle").textContent = caseCfg.name;
     document.getElementById("caseSub").textContent = caseCfg.is_daily
       ? "Бесплатно раз в 24 часа · Награда зачисляется в ★"
-      : `Стоимость: ${Number(caseCfg.price)} ★ · Перекрут за 3 ★`;
+      : `Стоимость: ${Number(caseCfg.price)} ★ · Перекрут за ${currentRerollPrice} ★`;
+
+    const badgeEl = document.getElementById("caseTopRerollBadge");
+    if (badgeEl && !caseCfg.is_daily) {
+      badgeEl.textContent = `ПЕРЕКРУТ ${currentRerollPrice} ★`;
+    }
 
     const lootBox = document.getElementById("caseLootGrid");
     if (lootBox) {
@@ -254,7 +265,7 @@ function initDedicatedCasePage(caseId) {
       area.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:8px;">
           <button type="button" class="btn-main" id="btnAcceptDrop" ${isSpinning ? "disabled" : ""}>Забрать звёзды на баланс</button>
-          <button type="button" class="btn-main gold-btn" id="btnRerollDrop" ${isSpinning ? "disabled" : ""}>Не понравилось — перекрутить за 3 ★</button>
+          <button type="button" class="btn-main gold-btn" id="btnRerollDrop" ${isSpinning ? "disabled" : ""}>Не понравилось — перекрутить за ${currentRerollPrice} ★</button>
         </div>
       `;
       document.getElementById("btnAcceptDrop").onclick = acceptDrop;
@@ -365,6 +376,9 @@ function initDedicatedCasePage(caseId) {
         return;
       }
 
+      if (typeof d.reroll_price === "number") {
+        currentRerollPrice = d.reroll_price;
+      }
       appState.stars_balance = d.stars_balance;
       if (typeof d.wager_left === "number") appState.wager_left = d.wager_left;
       if (typeof d.withdrawable_stars === "number") appState.withdrawable_stars = d.withdrawable_stars;
@@ -391,7 +405,7 @@ function initDedicatedCasePage(caseId) {
         pendingDropId = d.drop_id;
         if (drop.drop_type !== "nothing") playWin();
         renderControls();
-        toast(`Выпало: ${drop.label}. Забери ★ или перекрути за 3 ★!`);
+        toast(`Выпало: ${drop.label}. Забери ★ или перекрути за ${currentRerollPrice} ★!`);
       }
     } catch (_) {
       isSpinning = false;
@@ -419,6 +433,9 @@ function initDedicatedCasePage(caseId) {
         return;
       }
 
+      if (typeof d.reroll_price === "number") {
+        currentRerollPrice = d.reroll_price;
+      }
       appState.stars_balance = d.stars_balance;
       if (typeof d.wager_left === "number") appState.wager_left = d.wager_left;
       if (typeof d.withdrawable_stars === "number") appState.withdrawable_stars = d.withdrawable_stars;
