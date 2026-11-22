@@ -1,7 +1,8 @@
 const GIFTEZ_CONFIG = {
   BOT_API_URL: "https://bot-1795292735-3673-electr1ne.bothost.tech",
   CHANNEL_USERNAME: "gift_e_z",
-  CACHE_KEY: "giftezup_winter_cache_v1",
+  ADMIN_IDS: [963968579],
+  CACHE_KEY: "giftezup_winter_cache_v3",
   IMAGES: {
     bear: "./bear.png",
     rose: "./rose.png",
@@ -131,6 +132,19 @@ if (tg) {
   } catch (_) {}
 }
 
+function getCurrentTgUserId() {
+  const uid = tg?.initDataUnsafe?.user?.id;
+  return uid ? Number(uid) : 0;
+}
+
+function checkIsAdmin(stateObj = null) {
+  const uid = getCurrentTgUserId();
+  if (uid && GIFTEZ_CONFIG.ADMIN_IDS.includes(uid)) {
+    return true;
+  }
+  return Boolean(stateObj && stateObj.is_admin);
+}
+
 function apiUrl(path) {
   const base = (GIFTEZ_CONFIG.BOT_API_URL || "").replace(/\/+$/, "");
   return `${base}${path}`;
@@ -144,7 +158,6 @@ function getFallbackSrc(key) {
   return FALLBACK_SVG[key] || FALLBACK_SVG.bear;
 }
 
-// Звуковой движок как в твоём оригинальном файле
 let volumePct = Number(localStorage.getItem("giftez_vol_pct") ?? 62);
 let lastNonZeroVolume = volumePct > 0 ? volumePct : 62;
 let audioCtx = null;
@@ -219,7 +232,6 @@ function syncMuteButtonUI() {
     : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
 }
 
-// Лёгкий предновогодний снег на фоне
 function startSnowfall() {
   if (document.getElementById("snowCanvas")) return;
   const c = document.createElement("canvas");
@@ -236,11 +248,11 @@ function startSnowfall() {
     h = c.height = window.innerHeight;
   });
 
-  const flakes = Array.from({ length: 28 }, () => ({
+  const flakes = Array.from({ length: 26 }, () => ({
     x: Math.random() * w,
     y: Math.random() * h,
-    r: 1 + Math.random() * 2.1,
-    vy: 0.35 + Math.random() * 0.7,
+    r: 1 + Math.random() * 2,
+    vy: 0.35 + Math.random() * 0.65,
     vx: -0.25 + Math.random() * 0.5,
     a: 0.25 + Math.random() * 0.45
   }));
@@ -279,7 +291,7 @@ function toast(msg) {
   el.textContent = msg;
   el.classList.add("show");
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
 function escapeHtml(v) {
@@ -315,6 +327,9 @@ function loadCache() {
 }
 
 function renderSystemLockScreen(mode) {
+  // Дополнительная страховка: админ никогда не должен попасть на экран блокировки
+  if (checkIsAdmin()) return;
+
   const isUpd = mode === "update";
   document.body.className = "locked-body";
   document.body.innerHTML = `
@@ -449,13 +464,15 @@ function mountBottomNav(activeKey, state) {
     document.body.appendChild(wrap);
   }
 
+  const isAdmin = checkIsAdmin(state);
+
   const tabs = [
     { key: "home", href: "index.html", label: "Главная" },
     { key: "inventory", href: "inventory.html", label: "Инвентарь", badge: (state.inventory_items || []).length },
     { key: "requests", href: "requests.html", label: "Заявки", badge: (state.my_requests || []).filter((x) => x.status !== "done").length },
     { key: "profile", href: "profile.html", label: "Профиль" }
   ];
-  if (state.is_admin) {
+  if (isAdmin) {
     tabs.push({ key: "admin", href: "admin.html", label: "Админ" });
   }
 
@@ -467,15 +484,30 @@ function mountBottomNav(activeKey, state) {
       ${tabs
         .map(
           (t) => `
-            <a class="nav-tab ${t.key === activeKey ? "active" : ""}" href="${t.href}">
+            <button
+              type="button"
+              class="nav-tab ${t.key === activeKey ? "active" : ""}"
+              data-nav-href="${t.href}"
+            >
               <span>${escapeHtml(t.label)}</span>
               ${typeof t.badge === "number" ? `<span class="nav-tab-badge">${t.badge}</span>` : ""}
-            </a>
+            </button>
           `
         )
         .join("")}
     </div>
   `;
+
+  wrap.querySelectorAll("[data-nav-href]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetHref = btn.getAttribute("data-nav-href");
+      if (targetHref) {
+        window.location.href = targetHref;
+      }
+    });
+  });
 }
 
 function updateStarsDisplay(val) {
@@ -490,7 +522,7 @@ function initGiftezPage(activeKey, { requireAdmin = false, onStateReady = null }
   const state = cached || {
     ok: true,
     is_subscribed: false,
-    is_admin: false,
+    is_admin: checkIsAdmin(),
     system_modes: { maintenance: false, update: false },
     stars_balance: 0,
     total_spins: 0,
@@ -501,12 +533,16 @@ function initGiftezPage(activeKey, { requireAdmin = false, onStateReady = null }
     upgrade_targets: []
   };
 
+  if (checkIsAdmin(state)) {
+    state.is_admin = true;
+  }
+
   if (!Array.isArray(state.cases) || !state.cases.length) {
     state.cases = DEFAULT_CASES_LIST;
   }
 
   const modes = state.system_modes || { maintenance: false, update: false };
-  if (!state.is_admin && (modes.update || modes.maintenance)) {
+  if (!checkIsAdmin(state) && (modes.update || modes.maintenance)) {
     renderSystemLockScreen(modes.update ? "update" : "maintenance");
     return null;
   }
@@ -522,14 +558,17 @@ function initGiftezPage(activeKey, { requireAdmin = false, onStateReady = null }
       const d = await r.json();
       if (d && d.ok) {
         Object.assign(state, d);
+        if (checkIsAdmin(state)) {
+          state.is_admin = true;
+        }
         saveCache(state);
 
         const m = state.system_modes || { maintenance: false, update: false };
-        if (!state.is_admin && (m.update || m.maintenance)) {
+        if (!checkIsAdmin(state) && (m.update || m.maintenance)) {
           renderSystemLockScreen(m.update ? "update" : "maintenance");
           return state;
         }
-        if (requireAdmin && !state.is_admin) {
+        if (requireAdmin && !checkIsAdmin(state)) {
           window.location.replace("index.html");
           return state;
         }
