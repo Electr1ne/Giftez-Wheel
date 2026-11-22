@@ -2,7 +2,7 @@ const GIFTEZ_CONFIG = {
   BOT_API_URL: "https://bot-1795292735-3673-electr1ne.bothost.tech",
   CHANNEL_USERNAME: "gift_e_z",
   ADMIN_IDS: [963968579],
-  CACHE_KEY: "giftezup_winter_cache_v3",
+  CACHE_KEY: "giftezup_winter_cache_v4",
   IMAGES: {
     bear: "./bear.png",
     rose: "./rose.png",
@@ -158,6 +158,16 @@ function getFallbackSrc(key) {
   return FALLBACK_SVG[key] || FALLBACK_SVG.bear;
 }
 
+function navigateToPage(targetFile) {
+  const cleanTarget = String(targetFile || "index.html").replace(/^\/+/, "");
+  const currentFile = (window.location.pathname.split("/").pop() || "index.html");
+  if (currentFile === cleanTarget) {
+    return;
+  }
+  const url = new URL(cleanTarget, window.location.origin + "/");
+  window.location.assign(url.href);
+}
+
 let volumePct = Number(localStorage.getItem("giftez_vol_pct") ?? 62);
 let lastNonZeroVolume = volumePct > 0 ? volumePct : 62;
 let audioCtx = null;
@@ -307,10 +317,6 @@ function cleanUsername(v) {
   return String(v || "").trim().replace(/^@+/, "").replace(/[^a-zA-Z0-9_]/g, "");
 }
 
-function validUsername(v) {
-  return /^[a-zA-Z][a-zA-Z0-9_]{4,31}$/.test(cleanUsername(v));
-}
-
 function saveCache(state) {
   try {
     localStorage.setItem(GIFTEZ_CONFIG.CACHE_KEY, JSON.stringify(state));
@@ -327,7 +333,6 @@ function loadCache() {
 }
 
 function renderSystemLockScreen(mode) {
-  // Дополнительная страховка: админ никогда не должен попасть на экран блокировки
   if (checkIsAdmin()) return;
 
   const isUpd = mode === "update";
@@ -357,7 +362,7 @@ function mountHeader(state, onRefresh) {
 
   host.innerHTML = `
     <div class="top-bar fade-in">
-      <a class="brand-box" href="index.html">
+      <a class="brand-box" href="./index.html" id="brandHomeLink">
         <div class="brand-mark">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/>
@@ -379,6 +384,11 @@ function mountHeader(state, onRefresh) {
       </div>
     </div>
   `;
+
+  document.getElementById("brandHomeLink").onclick = (e) => {
+    e.preventDefault();
+    navigateToPage("index.html");
+  };
 
   syncMuteButtonUI();
   document.getElementById("globalMuteBtn").onclick = toggleGlobalMute;
@@ -504,7 +514,7 @@ function mountBottomNav(activeKey, state) {
       e.stopPropagation();
       const targetHref = btn.getAttribute("data-nav-href");
       if (targetHref) {
-        window.location.href = targetHref;
+        navigateToPage(targetHref);
       }
     });
   });
@@ -569,7 +579,7 @@ function initGiftezPage(activeKey, { requireAdmin = false, onStateReady = null }
           return state;
         }
         if (requireAdmin && !checkIsAdmin(state)) {
-          window.location.replace("index.html");
+          navigateToPage("index.html");
           return state;
         }
 
