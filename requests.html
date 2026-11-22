@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GiftezUp — Мои заявки</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="headerMount"></div>
+
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Мои заявки</h2>
+        <button type="button" class="btn-mini-refresh" id="reloadReqsBtn">Обновить</button>
+      </div>
+      <div class="note-box">
+        Срок выдачи подарков: <b>от 10 минут до 14 дней</b>. При обмене в звёзды Telegram удерживает стандартную комиссию (Мишка 15 → 13 ★, Роза 25 → 21 ★).
+      </div>
+      <div class="items-stack" id="requestsStack"></div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    (function () {
+      let appState = null;
+
+      function renderRequests() {
+        if (!appState) return;
+        const list = Array.isArray(appState.my_requests) ? appState.my_requests : [];
+        const wrap = document.getElementById("requestsStack");
+
+        if (!list.length) {
+          wrap.innerHTML = `<div class="empty-box">Активных заявок пока нет</div>`;
+          return;
+        }
+
+        wrap.innerHTML = list
+          .map((req) => {
+            const meta = PRIZE_META[req.prize] || { name: req.name || req.prize, stars: 0, exchangeStars: 0 };
+            const isDone = req.status === "done";
+            return `
+              <div class="list-row">
+                <div class="row-left">
+                  <img src="${getImageSrc(req.prize)}" onerror="this.src=getFallbackSrc('${escapeHtml(req.prize)}')" alt="" />
+                  <div>
+                    <div class="row-title">${escapeHtml(meta.name)} · @${escapeHtml(req.username)}</div>
+                    <div class="row-sub">#${escapeHtml(req.id)}</div>
+                  </div>
+                </div>
+                <span class="req-badge ${isDone ? "done" : "processing"}">${isDone ? "Выполнено" : "В обработке"}</span>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      const session = initGiftezPage("requests", {
+        onStateReady(fresh) {
+          appState = fresh;
+          renderRequests();
+        }
+      });
+      if (!session) return;
+      appState = session.state;
+      renderRequests();
+
+      document.getElementById("reloadReqsBtn").onclick = async () => {
+        await session.syncFromServer();
+        toast("Список обновлён");
+      };
+    })();
+  </script>
+</body>
+</html>

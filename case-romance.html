@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GiftezUp — Кейс Морозный</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="headerMount"></div>
+
+    <div class="sec-row fade-in">
+      <a class="btn-mini-refresh" href="index.html">&lt; Все кейсы</a>
+      <span class="pill-ice">ПЕРЕКРУТ 3 ★</span>
+    </div>
+
+    <div class="wheel-card fade-in">
+      <div class="wheel-head">
+        <h1 id="caseTitle">Морозный</h1>
+        <p id="caseSub">Стоимость: 12 ★ · Перекрут дропа за 3 ★</p>
+      </div>
+      <div class="wheel-stage">
+        <div class="center-frame"></div>
+        <canvas id="rouletteCanvas"></canvas>
+      </div>
+    </div>
+
+    <div id="caseControlsArea" class="fade-in"></div>
+
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Содержимое кейса</h2>
+        <span class="sec-sub">Возможный дроп</span>
+      </div>
+      <div class="inv-grid-2col" id="caseLootGrid"></div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script src="assets/case-engine.js"></script>
+  <script>
+    initDedicatedCasePage("romance");
+  </script>
+</body>
+</html>

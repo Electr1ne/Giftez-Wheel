@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GiftezUp — Апгрейдер</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+  <style>
+    .dial-box {
+      position: relative;
+      width: 224px;
+      height: 224px;
+      margin: 6px auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dial-inner {
+      position: absolute;
+      inset: 34px;
+      border-radius: 50%;
+      background: #0d1322;
+      border: 1px solid var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .dial-pct {
+      font-size: 29px;
+      font-weight: 900;
+      color: var(--ice-bright);
+    }
+
+    .qbet-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .target-card {
+      padding: 11px;
+      border-radius: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .target-card.active {
+      border-color: var(--ice-bright);
+      background: var(--ice-soft);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.22);
+    }
+
+    .target-card img {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="headerMount"></div>
+
+    <div class="sec-row fade-in">
+      <a class="btn-mini-refresh" href="index.html">&lt; На главную</a>
+      <span class="pill-ice">АПГРЕЙДЕР</span>
+    </div>
+
+    <div class="section-card fade-in">
+      <div class="dial-box">
+        <canvas id="upgradeDial" width="224" height="224"></canvas>
+        <div class="dial-inner">
+          <div class="dial-pct" id="upPctText">30%</div>
+          <div class="row-sub" id="upSubText">Шанс успеха</div>
+        </div>
+      </div>
+
+      <div class="row-sub">Ставка в звёздах (★)</div>
+      <input type="number" class="field-input" id="upBetInput" min="1" value="5" />
+
+      <div class="qbet-row">
+        <button type="button" class="btn-soft" data-qbet="1" style="height:34px;font-size:12px;">1 ★</button>
+        <button type="button" class="btn-soft" data-qbet="5" style="height:34px;font-size:12px;">5 ★</button>
+        <button type="button" class="btn-soft" data-qbet="10" style="height:34px;font-size:12px;">10 ★</button>
+        <button type="button" class="btn-soft" id="btnHalfStars" style="height:34px;font-size:12px;">50%</button>
+      </div>
+
+      <div class="card-head" style="margin-top:4px;">
+        <h2 style="font-size:14.5px;">Цель апгрейда</h2>
+        <span class="row-sub">До 80%</span>
+      </div>
+      <div class="grid-2" id="upTargetsGrid"></div>
+
+      <button type="button" class="btn-main" id="btnRunUpgrade">Прокачать</button>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    (function () {
+      const TARGETS = [
+        { id: "bear", name: "Мишка", stars: 15 },
+        { id: "rose", name: "Роза", stars: 25 },
+        { id: "rocket", name: "Ракета", stars: 50 },
+        { id: "ring", name: "Кольцо", stars: 100 }
+      ];
+
+      let appState = null;
+      let selected = TARGETS[0];
+      let pointerDeg = 0;
+      let busy = false;
+
+      const canvas = document.getElementById("upgradeDial");
+      const g = canvas.getContext("2d");
+
+      function getChance() {
+        const bet = Math.max(1, Number(document.getElementById("upBetInput").value || 1));
+        return Math.min(80, Math.max(1, Number(((bet / Math.max(1, selected.stars)) * 90).toFixed(1))));
+      }
+
+      function drawDial(pct, deg) {
+        const w = canvas.width;
+        const cx = w / 2;
+        const cy = w / 2;
+        const r = w / 2 - 14;
+        g.clearRect(0, 0, w, w);
+
+        g.beginPath();
+        g.arc(cx, cy, r, 0, Math.PI * 2);
+        g.strokeStyle = "rgba(148, 197, 255, 0.12)";
+        g.lineWidth = 14;
+        g.stroke();
+
+        const start = -Math.PI / 2;
+        const end = start + (Math.PI * 2 * (pct / 100));
+        g.beginPath();
+        g.arc(cx, cy, r, start, end);
+        g.strokeStyle = "#38bdf8";
+        g.lineWidth = 14;
+        g.lineCap = "round";
+        g.stroke();
+
+        const rad = (-90 + deg) * (Math.PI / 180);
+        const px = cx + Math.cos(rad) * (r + 2);
+        const py = cy + Math.sin(rad) * (r + 2);
+        g.beginPath();
+        g.arc(px, py, 7.5, 0, Math.PI * 2);
+        g.fillStyle = "#fde047";
+        g.fill();
+      }
+
+      function syncDial() {
+        const pct = getChance();
+        document.getElementById("upPctText").textContent = `${pct}%`;
+        drawDial(pct, pointerDeg);
+      }
+
+      function renderTargets() {
+        const grid = document.getElementById("upTargetsGrid");
+        grid.innerHTML = TARGETS.map(
+          (t) => `
+            <button type="button" class="target-card ${t.id === selected.id ? "active" : ""}" data-tid="${t.id}">
+              <img src="${getImageSrc(t.id)}" onerror="this.src=getFallbackSrc('${t.id}')" alt="" />
+              <div>
+                <div class="row-title">${escapeHtml(t.name)}</div>
+                <div class="row-sub">${t.stars} ★</div>
+              </div>
+            </button>
+          `
+        ).join("");
+
+        grid.querySelectorAll("[data-tid]").forEach((btn) => {
+          btn.onclick = () => {
+            if (busy) return;
+            const found = TARGETS.find((x) => x.id === btn.getAttribute("data-tid"));
+            if (found) {
+              selected = found;
+              renderTargets();
+              syncDial();
+            }
+          };
+        });
+      }
+
+      function animatePointer(totalDeg) {
+        return new Promise((resolve) => {
+          const t0 = performance.now();
+          const dur = 2600;
+          const pct = getChance();
+          let lastTickStep = 0;
+
+          function step(now) {
+            const p = Math.min(1, (now - t0) / dur);
+            const ease = 1 - Math.pow(1 - p, 3.4);
+            pointerDeg = totalDeg * ease;
+            const tickStep = Math.floor(pointerDeg / 24);
+            if (tickStep !== lastTickStep) {
+              lastTickStep = tickStep;
+              playTick();
+            }
+            drawDial(pct, pointerDeg);
+            if (p < 1) requestAnimationFrame(step);
+            else resolve();
+          }
+          requestAnimationFrame(step);
+        });
+      }
+
+      const session = initGiftezPage("home", {
+        onStateReady(fresh) {
+          appState = fresh;
+        }
+      });
+      if (!session) return;
+      appState = session.state;
+
+      renderTargets();
+      syncDial();
+
+      document.getElementById("upBetInput").oninput = syncDial;
+      document.querySelectorAll("[data-qbet]").forEach((b) => {
+        b.onclick = () => {
+          if (busy) return;
+          document.getElementById("upBetInput").value = b.getAttribute("data-qbet");
+          syncDial();
+        };
+      });
+      document.getElementById("btnHalfStars").onclick = () => {
+        if (busy) return;
+        const half = Math.max(1, Math.floor(Number(appState.stars_balance || 0) / 2));
+        document.getElementById("upBetInput").value = half;
+        syncDial();
+      };
+
+      document.getElementById("btnRunUpgrade").onclick = async () => {
+        if (busy) return;
+        const bet = Math.floor(Number(document.getElementById("upBetInput").value || 0));
+        if (bet < 1) {
+          toast("Укажи ставку от 1 ★");
+          return;
+        }
+        if (!tg?.initData) {
+          toast("Открой в Telegram");
+          return;
+        }
+
+        busy = true;
+        const btn = document.getElementById("btnRunUpgrade");
+        btn.disabled = true;
+        document.getElementById("upSubText").textContent = "Прокачка...";
+
+        try {
+          const r = await fetch(apiUrl("/api/upgrade_spin"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              initData: tg.initData,
+              bet_stars: bet,
+              target_id: selected.id
+            })
+          });
+          const d = await r.json();
+          if (!d.ok) {
+            busy = false;
+            btn.disabled = false;
+            document.getElementById("upSubText").textContent = "Шанс успеха";
+            toast(d.message || "Ошибка апгрейда");
+            return;
+          }
+
+          const finalAngle = 360 * 5 + (Number(d.roll || 50) / 100) * 360;
+          await animatePointer(finalAngle);
+
+          appState.stars_balance = d.stars_balance;
+          updateStarsDisplay(appState.stars_balance);
+          saveCache(appState);
+
+          busy = false;
+          btn.disabled = false;
+
+          if (d.won) {
+            playWin();
+            document.getElementById("upSubText").textContent = "Успех!";
+            toast(`Апгрейд прошёл! ${selected.name} в инвентаре`);
+            await session.syncFromServer();
+          } else {
+            document.getElementById("upSubText").textContent = "Не повезло";
+            toast("Апгрейд не зашёл");
+          }
+        } catch (_) {
+          busy = false;
+          btn.disabled = false;
+          document.getElementById("upSubText").textContent = "Шанс успеха";
+          toast("Ошибка сети");
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

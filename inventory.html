@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GiftezUp — Инвентарь</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="headerMount"></div>
+
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Инвентарь</h2>
+        <span class="pill-ice" id="invCountBadge">0 шт.</span>
+      </div>
+      <div class="note-box">
+        Хранение неограниченно. После нажатия <b>«Забрать»</b> подарок уходит в заявки, а выдача занимает <b>от 10 минут до 14 дней</b>.
+      </div>
+      <div class="inv-grid-2col" id="invGrid"></div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    (function () {
+      let appState = null;
+
+      function renderInventory() {
+        if (!appState) return;
+        const items = Array.isArray(appState.inventory_items) ? appState.inventory_items : [];
+        document.getElementById("invCountBadge").textContent = `${items.length} шт.`;
+        const grid = document.getElementById("invGrid");
+
+        if (!items.length) {
+          grid.innerHTML = `<div class="empty-box">Инвентарь пуст. Открывай зимние кейсы или прокачивай звёзды в апгрейдере!</div>`;
+          return;
+        }
+
+        grid.innerHTML = items
+          .map((item) => {
+            const meta = PRIZE_META[item.prize] || { name: item.name || item.prize, stars: item.stars || 0, exchangeStars: 0 };
+            return `
+              <div class="inv-tile" data-tile-id="${escapeHtml(item.id)}">
+                <div class="inv-tile-top">
+                  <span class="inv-tile-price">${meta.stars} ★</span>
+                  <span class="inv-tile-swap">→ ${meta.exchangeStars} ★</span>
+                </div>
+                <div class="inv-tile-art">
+                  <img src="${getImageSrc(item.prize)}" onerror="this.src=getFallbackSrc('${escapeHtml(item.prize)}')" alt="" />
+                </div>
+                <div class="inv-tile-title">${escapeHtml(meta.name)}</div>
+                <button type="button" class="btn-tile-claim" data-claim-btn="${escapeHtml(item.id)}">Забрать</button>
+              </div>
+            `;
+          })
+          .join("");
+
+        grid.querySelectorAll("[data-claim-btn]").forEach((btn) => {
+          btn.onclick = async () => {
+            const itemId = btn.getAttribute("data-claim-btn");
+            const uname = cleanUsername(tg?.initDataUnsafe?.user?.username || "");
+            if (!uname) {
+              toast("Укажи @username в профиле Telegram, чтобы забрать подарок");
+              return;
+            }
+            if (!tg?.initData) {
+              toast("Открой в Telegram");
+              return;
+            }
+
+            btn.disabled = true;
+            const tile = grid.querySelector(`[data-tile-id="${CSS.escape(itemId)}"]`);
+            if (tile) tile.classList.add("claiming-anim");
+
+            try {
+              const r = await fetch(apiUrl("/api/claim_request"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  initData: tg.initData,
+                  item_id: itemId,
+                  username: uname
+                })
+              });
+              const d = await r.json();
+              if (d.ok) {
+                playWin();
+                appState.inventory_items = appState.inventory_items.filter((x) => x.id !== itemId);
+                saveCache(appState);
+                mountBottomNav("inventory", appState);
+                renderInventory();
+                toast("Заявка отправлена!");
+                await session.syncFromServer();
+              } else {
+                if (tile) tile.classList.remove("claiming-anim");
+                btn.disabled = false;
+                toast(d.message || "Не удалось оформить заявку");
+              }
+            } catch (_) {
+              if (tile) tile.classList.remove("claiming-anim");
+              btn.disabled = false;
+              toast("Ошибка сети");
+            }
+          };
+        });
+      }
+
+      const session = initGiftezPage("inventory", {
+        onStateReady(fresh) {
+          appState = fresh;
+          renderInventory();
+        }
+      });
+      if (!session) return;
+      appState = session.state;
+      renderInventory();
+    })();
+  </script>
+</body>
+</html>
