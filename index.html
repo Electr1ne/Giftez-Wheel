@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GiftezUp — Админ-панель</title>
+  <title>GiftezUp — Кейсы и апгрейды</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
 </head>
@@ -11,296 +11,180 @@
   <div class="app">
     <div id="headerMount"></div>
 
-    <!-- Раздельные тумблеры техработ и обновления -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Режимы доступа</h2>
-        <span class="pill-ice">ADMIN</span>
+    <!-- Статус подписки на канал -->
+    <div class="channel-row fade-in" id="channelRow">
+      <div class="channel-info">
+        <h3>Канал @gift_e_z</h3>
+        <p>Подписка для ежедневного кейса</p>
       </div>
-      <div class="note-box">
-        При включении любого режима игрокам скрывается меню и показывается экран с часами. Доступ остаётся только у тебя.
-      </div>
-
-      <div class="list-row">
-        <div>
-          <div class="row-title">Техработы</div>
-          <div class="row-sub">Исправление ошибок и улучшения</div>
-        </div>
-        <button type="button" class="btn-soft" id="btnModeMaint">Загрузка...</button>
-      </div>
-
-      <div class="list-row">
-        <div>
-          <div class="row-title">Обновление</div>
-          <div class="row-sub">Полноценная выкатка обновления</div>
-        </div>
-        <button type="button" class="btn-soft" id="btnModeUpd">Загрузка...</button>
-      </div>
+      <div class="status-pill no" id="subStatusPill">Проверка...</div>
     </div>
 
-    <!-- Управление игроком по @username -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Управление игроком</h2>
+    <!-- Промо-баннер ежедневного кейса (отдельная страница case-daily.html) -->
+    <a class="winter-hero fade-in" href="case-daily.html">
+      <div class="hero-left">
+        <div class="hero-chip" id="dailyChipText">БЕСПЛАТНО РАЗ В 24Ч</div>
+        <h2>Ежедневный кейс</h2>
+        <p>Внутри: Мишка, Роза и от 1 до 20 ★ на баланс</p>
+        <span class="hero-open-btn" id="dailyHeroBtn">Открыть кейс &gt;</span>
       </div>
-      <input type="text" class="field-input" id="admTargetUser" placeholder="@username игрока" />
-      <input type="number" class="field-input" id="admTargetStars" placeholder="Количество звёзд (напр. 10)" />
-      <div class="grid-2">
-        <button type="button" class="btn-green-sm" id="admGiveBtn">Выдать ★</button>
-        <button type="button" class="btn-red-sm" id="admTakeBtn">Списать ★</button>
+      <div class="hero-right">
+        <img src="./bear.png" onerror="this.src=getFallbackSrc('bear')" alt="Ежедневный кейс" />
       </div>
-      <div class="grid-2">
-        <button type="button" class="btn-soft" id="admResetOneBtn">Сброс 24ч игроку</button>
-        <button type="button" class="btn-soft" id="admResetAllBtn">Сброс 24ч ВСЕМ</button>
+    </a>
+
+    <!-- Раздел Игры (только Апгрейдер) -->
+    <div class="sec-row fade-in">
+      <div class="sec-title">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <span>Игры</span>
       </div>
+      <span class="sec-sub">Шанс до 80%</span>
     </div>
 
-    <!-- Создание промокода -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Создать промокод</h2>
+    <a class="upgrade-card-banner fade-in" href="upgrader.html">
+      <div>
+        <h3>Апгрейдер</h3>
+        <p>Прокачай звёзды или подарок с выбором шанса</p>
       </div>
-      <input type="text" class="field-input" id="admPromoCode" placeholder="Код (например: WINTER26)" />
-      <div class="grid-2">
-        <input type="number" class="field-input" id="admPromoStars" placeholder="Звёзд (★)" />
-        <input type="number" class="field-input" id="admPromoUses" placeholder="Активаций" />
+      <div class="upgrade-badge-box">
+        <span>★</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2.4">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+        <span>🎁</span>
       </div>
-      <button type="button" class="btn-main" id="admPromoCreateBtn">Создать промокод</button>
+    </a>
+
+    <!-- Раздел Кейсы (сетка 2 в ряд, каждый кейс открывает свою страницу) -->
+    <div class="sec-row fade-in">
+      <div class="sec-title">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2">
+          <rect x="3" y="8" width="18" height="13" rx="2"/>
+          <path d="M12 8v13"/>
+          <path d="M3 12h18"/>
+        </svg>
+        <span>Зимние кейсы</span>
+      </div>
+      <span class="sec-sub">Перекрут за 3 ★</span>
     </div>
 
-    <!-- Рассылка -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Рассылка в ЛС</h2>
-      </div>
-      <textarea class="broadcast-area" id="admBroadcastText" rows="3" placeholder="Текст сообщения всем игрокам..."></textarea>
-      <button type="button" class="btn-main" id="admBroadcastBtn">Отправить всем</button>
-    </div>
-
-    <!-- Заявки -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Заявки на подарки</h2>
-        <button type="button" class="btn-mini-refresh" id="admReloadReqsBtn">Обновить</button>
-      </div>
-      <div class="items-stack" id="admReqsList">
-        <div class="empty-box">Загрузка заявок...</div>
-      </div>
-    </div>
+    <div class="cases-grid-2 fade-in" id="casesGrid2"></div>
   </div>
 
   <script src="assets/app.js"></script>
   <script>
     (function () {
+      const PAGE_MAP = {
+        daily: "case-daily.html",
+        starter: "case-starter.html",
+        romance: "case-romance.html",
+        cosmos: "case-cosmos.html",
+        luxury: "case-luxury.html"
+      };
+
       let appState = null;
 
-      function syncModeLabels() {
+      function renderSubRow() {
         if (!appState) return;
-        const m = appState.system_modes || { maintenance: false, update: false };
-        const btnM = document.getElementById("btnModeMaint");
-        const btnU = document.getElementById("btnModeUpd");
-        btnM.textContent = m.maintenance ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
-        btnU.textContent = m.update ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
-        btnM.style.borderColor = m.maintenance ? "var(--ice-bright)" : "";
-        btnU.style.borderColor = m.update ? "var(--ice-bright)" : "";
-      }
-
-      async function adminPost(path, payload = {}) {
-        const initData = window.Telegram?.WebApp?.initData || "";
-        if (!initData) {
-          toast("Открой админку внутри Telegram Mini App");
-          return null;
-        }
-        try {
-          const r = await fetch(apiUrl(path), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ initData, ...payload })
-          });
-          const data = await r.json();
-          if (!r.ok || !data.ok) {
-            toast(data.message || `Ошибка сервера (${r.status})`);
-            return null;
-          }
-          return data;
-        } catch (err) {
-          toast("Сервер Bothost недоступен или не перезапущен");
-          return null;
+        const pill = document.getElementById("subStatusPill");
+        if (appState.is_subscribed) {
+          pill.textContent = "Подписан";
+          pill.className = "status-pill ok";
+        } else {
+          pill.textContent = "Подписаться";
+          pill.className = "status-pill no";
         }
       }
 
-      async function toggleMode(modeName, btnEl) {
+      function renderDailyTimer() {
         if (!appState) return;
-        btnEl.disabled = true;
-        const cur = Boolean((appState.system_modes || {})[modeName]);
-        const d = await adminPost("/api/admin/mode", { mode: modeName, enabled: !cur });
-        btnEl.disabled = false;
-        if (d && d.system_modes) {
-          appState.system_modes = d.system_modes;
-          saveCache(appState);
-          syncModeLabels();
-          toast(
-            modeName === "update"
-              ? `Обновление: ${d.system_modes.update ? "ВКЛ" : "ВЫКЛ"}`
-              : `Техработы: ${d.system_modes.maintenance ? "ВКЛ" : "ВЫКЛ"}`
-          );
-        }
-      }
+        const chip = document.getElementById("dailyChipText");
+        const btn = document.getElementById("dailyHeroBtn");
+        const now = Math.floor(Date.now() / 1000);
+        const nextAt = Number(appState.next_spin_at || 0);
 
-      async function loadRequests() {
-        const box = document.getElementById("admReqsList");
-        const d = await adminPost("/api/admin/requests", {});
-        if (!d) return;
-        if (!Array.isArray(d.requests) || !d.requests.length) {
-          box.innerHTML = `<div class="empty-box">Активных заявок нет</div>`;
+        if (!nextAt || nextAt <= now) {
+          chip.textContent = "ДОСТУПЕН СЕЙЧАС";
+          btn.textContent = "Открыть кейс >";
           return;
         }
 
-        box.innerHTML = d.requests
-          .map(
-            (req) => `
-              <div class="list-row" style="flex-direction:column;align-items:stretch;gap:8px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                  <div class="row-left">
-                    <img src="${getImageSrc(req.prize)}" onerror="this.src=getFallbackSrc('${escapeHtml(req.prize)}')" alt="" />
-                    <div>
-                      <div class="row-title">${escapeHtml(req.name || req.prize)}</div>
-                      <div class="row-sub">@${escapeHtml(req.username)} · ID ${req.user_id}</div>
-                    </div>
-                  </div>
-                  <span class="req-badge ${req.status === "done" ? "done" : "processing"}">${req.status === "done" ? "Выполнено" : "В работе"}</span>
-                </div>
-                <div class="grid-2">
-                  <button type="button" class="btn-green-sm" data-done-id="${escapeHtml(req.id)}">Выдано</button>
-                  <button type="button" class="btn-red-sm" data-del-id="${escapeHtml(req.id)}">Удалить</button>
-                </div>
-              </div>
-            `
-          )
-          .join("");
-
-        box.querySelectorAll("[data-done-id]").forEach((b) => {
-          b.onclick = async () => {
-            const id = b.getAttribute("data-done-id");
-            b.disabled = true;
-            const out = await adminPost("/api/admin/complete", { request_id: id });
-            b.disabled = false;
-            if (out) {
-              toast("Отмечено как выдано");
-              loadRequests();
-            }
-          };
-        });
-
-        box.querySelectorAll("[data-del-id]").forEach((b) => {
-          b.onclick = async () => {
-            const id = b.getAttribute("data-del-id");
-            b.disabled = true;
-            const out = await adminPost("/api/admin/delete_request", { request_id: id });
-            b.disabled = false;
-            if (out) {
-              toast("Заявка удалена из базы");
-              loadRequests();
-            }
-          };
-        });
+        const left = nextAt - now;
+        const h = String(Math.floor(left / 3600)).padStart(2, "0");
+        const m = String(Math.floor((left % 3600) / 60)).padStart(2, "0");
+        const s = String(left % 60).padStart(2, "0");
+        chip.textContent = `ЧЕРЕЗ ${h}:${m}:${s}`;
+        btn.textContent = "Перейти к кейсу >";
       }
 
-      const session = initGiftezPage("admin", {
-        requireAdmin: true,
+      function renderCases() {
+        const grid = document.getElementById("casesGrid2");
+        const sourceList = (appState && Array.isArray(appState.cases) && appState.cases.length)
+          ? appState.cases
+          : DEFAULT_CASES_LIST;
+
+        const paidCases = sourceList.filter((c) => !c.is_daily && c.id !== "daily");
+
+        grid.innerHTML = paidCases
+          .map((c) => {
+            const href = PAGE_MAP[c.id] || `case.html?id=${encodeURIComponent(c.id)}`;
+            const fbKey = c.id === "romance" ? "rose" : (c.id === "cosmos" ? "rocket" : (c.id === "luxury" ? "ring" : "bear"));
+            const tierCls = c.id === "luxury" ? "tier-gold" : (c.id === "romance" ? "tier-pine" : "");
+            return `
+              <a class="case-card-link ${tierCls}" href="${href}">
+                <span class="case-tag">${escapeHtml(c.badge || "ЗИМА")}</span>
+                <div class="case-art">
+                  <img src="./${escapeHtml(c.icon || "bear.png")}" onerror="this.src=getFallbackSrc('${fbKey}')" alt="${escapeHtml(c.name)}" />
+                </div>
+                <div class="case-name">${escapeHtml(c.name)}</div>
+                <div class="case-btn-pill">${Number(c.price)} ★</div>
+              </a>
+            `;
+          })
+          .join("");
+      }
+
+      const session = initGiftezPage("home", {
         onStateReady(fresh) {
           appState = fresh;
-          syncModeLabels();
+          renderSubRow();
+          renderDailyTimer();
+          renderCases();
         }
       });
+
       if (!session) return;
       appState = session.state;
-      syncModeLabels();
-      loadRequests();
 
-      const btnMaint = document.getElementById("btnModeMaint");
-      const btnUpd = document.getElementById("btnModeUpd");
-      btnMaint.onclick = () => toggleMode("maintenance", btnMaint);
-      btnUpd.onclick = () => toggleMode("update", btnUpd);
-      document.getElementById("admReloadReqsBtn").onclick = loadRequests;
+      renderSubRow();
+      renderDailyTimer();
+      renderCases();
+      setInterval(renderDailyTimer, 1000);
 
-      async function mutateStars(sign, btnEl) {
-        const username = document.getElementById("admTargetUser").value.trim();
-        const val = Math.abs(Number(document.getElementById("admTargetStars").value || 0));
-        if (!username || !val) {
-          toast("Укажи @username и сумму");
-          return;
-        }
-        btnEl.disabled = true;
-        const d = await adminPost("/api/admin/user_stars", { username, delta: sign * val });
-        btnEl.disabled = false;
-        if (d) {
-          toast(d.message || "Готово");
-          await session.syncFromServer();
-        }
-      }
+      document.getElementById("subStatusPill").onclick = async () => {
+        if (appState.is_subscribed) return;
+        const url = `https://t.me/${GIFTEZ_CONFIG.CHANNEL_USERNAME}`;
+        if (tg?.openTelegramLink) tg.openTelegramLink(url);
+        else window.open(url, "_blank");
 
-      const btnGive = document.getElementById("admGiveBtn");
-      const btnTake = document.getElementById("admTakeBtn");
-      btnGive.onclick = () => mutateStars(1, btnGive);
-      btnTake.onclick = () => mutateStars(-1, btnTake);
-
-      const btnResetOne = document.getElementById("admResetOneBtn");
-      btnResetOne.onclick = async () => {
-        const username = document.getElementById("admTargetUser").value.trim();
-        if (!username) {
-          toast("Введи @username");
-          return;
-        }
-        btnResetOne.disabled = true;
-        const d = await adminPost("/api/admin/reset_user_timer", { username });
-        btnResetOne.disabled = false;
-        if (d) {
-          toast(d.message || "Таймер игрока сброшен");
-          await session.syncFromServer();
-        }
-      };
-
-      const btnResetAll = document.getElementById("admResetAllBtn");
-      btnResetAll.onclick = async () => {
-        btnResetAll.disabled = true;
-        const d = await adminPost("/api/admin/reset_all_timers", {});
-        btnResetAll.disabled = false;
-        if (d) {
-          appState.next_spin_at = 0;
-          saveCache(appState);
-          toast(`Таймер сброшен у ${d.updated_users ?? 0} игроков`);
-          await session.syncFromServer();
-        }
-      };
-
-      const btnPromo = document.getElementById("admPromoCreateBtn");
-      btnPromo.onclick = async () => {
-        const code = document.getElementById("admPromoCode").value.trim();
-        const reward_stars = Number(document.getElementById("admPromoStars").value || 0);
-        const max_uses = Number(document.getElementById("admPromoUses").value || 1);
-        btnPromo.disabled = true;
-        const d = await adminPost("/api/admin/create_promo", { code, reward_stars, max_uses });
-        btnPromo.disabled = false;
-        if (d) {
-          document.getElementById("admPromoCode").value = "";
-          toast(d.message || "Промокод создан");
-        }
-      };
-
-      const btnBroadcast = document.getElementById("admBroadcastBtn");
-      btnBroadcast.onclick = async () => {
-        const text = document.getElementById("admBroadcastText").value.trim();
-        if (!text) {
-          toast("Введи текст рассылки");
-          return;
-        }
-        btnBroadcast.disabled = true;
-        const d = await adminPost("/api/admin/broadcast", { text });
-        btnBroadcast.disabled = false;
-        if (d) {
-          document.getElementById("admBroadcastText").value = "";
-          toast(`Отправлено: ${d.sent}/${d.total}`);
+        if (tg?.initData) {
+          setTimeout(async () => {
+            const r = await fetch(apiUrl("/api/check_sub"), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ initData: tg.initData })
+            });
+            const d = await r.json();
+            if (d.ok) {
+              appState.is_subscribed = Boolean(d.is_subscribed);
+              saveCache(appState);
+              renderSubRow();
+            }
+          }, 2500);
         }
       };
     })();
