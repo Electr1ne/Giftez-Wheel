@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GiftezUp — Кейс</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="headerMount"></div>
+
+    <div class="sec-row fade-in">
+      <a class="btn-mini-refresh" href="index.html">&lt; Назад</a>
+      <span class="pill-ice" id="caseTopRerollBadge">КЕЙС</span>
+    </div>
+
+    <div class="wheel-card fade-in">
+      <div class="wheel-head">
+        <h1 id="caseTitle">Кейс</h1>
+        <p id="caseSub">Загрузка...</p>
+      </div>
+
+      <!-- Обычная рулетка -->
+      <div class="wheel-stage" id="standardWheelStage">
+        <div class="center-frame"></div>
+        <canvas id="rouletteCanvas"></canvas>
+      </div>
+
+      <!-- Особая сцена для «Тонкого льда» (раскол ледяной плиты без обычной рулетки) -->
+      <div class="thin-ice-stage" id="thinIceStage" style="display:none;">
+        <div class="ice-slab-box" id="iceSlabBox">
+          <div class="ice-slab-core" id="iceSlabCore">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#bae6fd" stroke-width="1.8">
+              <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z"/>
+              <path d="M12 22V12"/>
+              <path d="M20 7l-8 5-8-5"/>
+            </svg>
+            <div class="ice-slab-label" id="iceSlabResultText">ТОНКИЙ ЛЁД</div>
+          </div>
+          <svg class="ice-cracks-svg" viewBox="0 0 200 140" fill="none">
+            <path class="crack-line c1" d="M100 0 L92 38 L108 65 L95 95 L103 140" />
+            <path class="crack-line c2" d="M0 68 L48 62 L85 74 L125 60 L200 72" />
+            <path class="crack-line c3" d="M35 12 L75 48 L128 92 L170 130" />
+          </svg>
+        </div>
+      </div>
+
+      <div style="padding:12px 14px 0;" id="caseControlsArea"></div>
+    </div>
+
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Содержимое кейса</h2>
+        <span class="row-sub">Возможный дроп</span>
+      </div>
+      <div class="inv-grid-2col" id="caseLootGrid"></div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script src="assets/case-engine.js"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const cid = params.get("id") || "starter";
+      initDedicatedCasePage(cid);
+    })();
+  </script>
+</body>
+</html>

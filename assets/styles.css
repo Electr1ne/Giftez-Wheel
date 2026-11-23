@@ -1164,3 +1164,291 @@ canvas#rouletteCanvas {
   opacity: 1;
   visibility: visible;
 }
+/* === Обновление дизайна v2 === */
+.event-banner-card {
+  background: linear-gradient(135deg, #10203e 0%, #1b2854 55%, #11182c 100%);
+  border: 1px solid rgba(125, 211, 252, 0.34);
+  border-radius: 20px;
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  box-shadow: 0 12px 28px rgba(14, 165, 233, 0.16);
+}
+
+.event-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pill-gold-sm {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--gold-soft);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: #fde047;
+}
+
+.event-timer-chip {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 10px;
+  background: rgba(7, 10, 18, 0.55);
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  color: #e0f2fe;
+}
+
+.event-desc {
+  font-size: 11.5px;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.ice-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ice-progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(7, 10, 18, 0.7);
+  border: 1px solid rgba(148, 197, 255, 0.18);
+  overflow: hidden;
+}
+
+.ice-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  transition: width 0.35s ease;
+}
+
+.ice-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ice-progress-meta b {
+  color: #fff;
+}
+
+/* Сетка карточек раздела «Игры» в стиле референса */
+.games-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.game-tile-card {
+  position: relative;
+  border-radius: 20px;
+  padding: 12px 8px 11px;
+  min-height: 136px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.36);
+  overflow: hidden;
+  transition: transform 0.14s ease;
+}
+
+.game-tile-card:active {
+  transform: scale(0.97);
+}
+
+.game-tile-card.tile-cases {
+  background: linear-gradient(165deg, #0ea5e9 0%, #1d4ed8 58%, #0f172a 100%);
+}
+
+.game-tile-card.tile-upgrader {
+  background: linear-gradient(165deg, #8b5cf6 0%, #4338ca 58%, #1e1b4b 100%);
+}
+
+.game-tile-card.tile-avalanche {
+  background: linear-gradient(165deg, #2dd4bf 0%, #0284c7 58%, #0f172a 100%);
+}
+
+.game-tile-card.is-locked {
+  opacity: 0.72;
+  filter: saturate(0.65);
+}
+
+.game-tile-art {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-tile-art img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+}
+
+.game-tile-pill {
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(7, 10, 18, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #e0f2fe;
+}
+
+.game-tile-title {
+  font-size: 13.5px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+
+/* Вкладки зимних категорий кейсов */
+.cat-tabs-scroll {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.cat-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-tab-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cat-tab-btn.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.24), rgba(99, 102, 241, 0.28));
+  border-color: var(--ice-bright);
+  color: #fff;
+}
+
+.case-limit-line {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.case-limit-line b {
+  color: var(--ice-bright);
+}
+
+.case-card-link.tier-thin-ice {
+  background: linear-gradient(180deg, rgba(45, 212, 191, 0.16) 0%, var(--panel) 66%);
+  border-color: rgba(45, 212, 191, 0.42);
+}
+
+.case-card-link.is-disabled-card {
+  opacity: 0.65;
+}
+
+/* Анимация «Тонкий лёд» */
+.thin-ice-stage {
+  height: 166px;
+  padding: 8px 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.ice-slab-box {
+  position: relative;
+  width: 100%;
+  height: 146px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(56, 189, 248, 0.22), rgba(15, 23, 42, 0.92));
+  border: 1.5px solid rgba(125, 211, 252, 0.52);
+  box-shadow: inset 0 0 28px rgba(56, 189, 248, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ice-slab-core {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ice-slab-label {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  color: #e0f2fe;
+}
+
+.ice-cracks-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.crack-line {
+  stroke: #e0f2fe;
+  stroke-width: 2;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  transition: stroke-dashoffset 0.7s ease;
+}
+
+.ice-slab-box.cracking .crack-line {
+  stroke-dashoffset: 0;
+}
+
+@keyframes iceShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px) rotate(-0.6deg); }
+  75% { transform: translateX(4px) rotate(0.6deg); }
+}
+
+.ice-slab-box.shaking {
+  animation: iceShake 0.16s infinite;
+}
+
+.ice-slab-box.broken-empty {
+  border-color: rgba(244, 63, 94, 0.65);
+  box-shadow: inset 0 0 32px rgba(244, 63, 94, 0.28);
+}
+
+.ice-slab-box.broken-small {
+  border-color: rgba(56, 189, 248, 0.85);
+}
+
+.ice-slab-box.broken-jackpot {
+  border-color: #fbbf24;
+  box-shadow: 0 0 32px rgba(251, 191, 36, 0.45), inset 0 0 32px rgba(251, 191, 36, 0.35);
+}

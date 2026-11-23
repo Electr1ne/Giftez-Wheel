@@ -11,14 +11,38 @@
   <div class="app">
     <div id="headerMount"></div>
 
+    <!-- Переключатель дизайна (только для админа / для всех игроков) -->
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Версия дизайна и ивента</h2>
+        <span class="pill-ice">UI SWITCH</span>
+      </div>
+      <div class="note-box">
+        <b>v2</b> — новый дизайн (игры, зимние категории, кейсы до 150 ★, «Тонкий лёд» и отсчёт до 1 декабря 00:00 МСК).
+      </div>
+
+      <div class="list-row">
+        <div>
+          <div class="row-title">Мой вид (Админ)</div>
+          <div class="row-sub">Тестируй v2 до запуска для всех</div>
+        </div>
+        <button type="button" class="btn-ice-sm" id="btnUiAdminVer">v2</button>
+      </div>
+
+      <div class="list-row">
+        <div>
+          <div class="row-title">Дизайн для всех игроков</div>
+          <div class="row-sub">Публичная версия витрины</div>
+        </div>
+        <button type="button" class="btn-soft" id="btnUiPublicVer">v1</button>
+      </div>
+    </div>
+
     <!-- Раздельные тумблеры техработ и обновления -->
     <div class="section-card fade-in">
       <div class="card-head">
         <h2>Режимы доступа</h2>
         <span class="pill-ice">ADMIN</span>
-      </div>
-      <div class="note-box">
-        При включении любого режима игрокам скрывается меню и показывается экран с часами. Доступ остаётся только у тебя.
       </div>
 
       <div class="list-row">
@@ -96,7 +120,22 @@
 
       function syncModeLabels() {
         if (!appState) return;
-        const m = appState.system_modes || { maintenance: false, update: false };
+        const m = appState.system_modes || {
+          maintenance: false,
+          update: false,
+          ui_admin_version: "v2",
+          ui_public_version: "v1"
+        };
+
+        const btnAdmV = document.getElementById("btnUiAdminVer");
+        const btnPubV = document.getElementById("btnUiPublicVer");
+        const admVer = m.ui_admin_version || "v2";
+        const pubVer = m.ui_public_version || "v1";
+
+        btnAdmV.textContent = admVer === "v2" ? "Новый (v2)" : "Старый (v1)";
+        btnPubV.textContent = pubVer === "v2" ? "Новый (v2)" : "Старый (v1)";
+        btnPubV.style.borderColor = pubVer === "v2" ? "var(--ice-bright)" : "";
+
         const btnM = document.getElementById("btnModeMaint");
         const btnU = document.getElementById("btnModeUpd");
         btnM.textContent = m.maintenance ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
@@ -126,6 +165,24 @@
         } catch (err) {
           toast("Сервер Bothost недоступен");
           return null;
+        }
+      }
+
+      async function toggleUiScope(scope, btnEl) {
+        if (!appState) return;
+        btnEl.disabled = true;
+        const m = appState.system_modes || {};
+        const cur = scope === "admin" ? (m.ui_admin_version || "v2") : (m.ui_public_version || "v1");
+        const nextVer = cur === "v2" ? "v1" : "v2";
+        const d = await adminPost("/api/admin/ui_version", { scope, version: nextVer });
+        btnEl.disabled = false;
+        if (d && d.system_modes) {
+          appState.system_modes = d.system_modes;
+          appState.ui_version = d.ui_version;
+          saveCache(appState);
+          syncModeLabels();
+          await session.syncFromServer();
+          toast(scope === "admin" ? `Твой вид: ${nextVer.toUpperCase()}` : `Для всех игроков: ${nextVer.toUpperCase()}`);
         }
       }
 
@@ -215,6 +272,11 @@
       appState = session.state;
       syncModeLabels();
       loadRequests();
+
+      const btnAdmV = document.getElementById("btnUiAdminVer");
+      const btnPubV = document.getElementById("btnUiPublicVer");
+      btnAdmV.onclick = () => toggleUiScope("admin", btnAdmV);
+      btnPubV.onclick = () => toggleUiScope("public", btnPubV);
 
       const btnMaint = document.getElementById("btnModeMaint");
       const btnUpd = document.getElementById("btnModeUpd");

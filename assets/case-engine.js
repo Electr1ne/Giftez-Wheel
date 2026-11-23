@@ -40,6 +40,8 @@ function initDedicatedCasePage(caseId) {
 
   resolveCase();
 
+  const isThinIceMode = () => Boolean(caseCfg && caseCfg.special_mode === "thin_ice");
+
   const canvas = document.getElementById("rouletteCanvas");
   const ctx = canvas.getContext("2d");
   const ITEM_W = 114;
@@ -75,6 +77,7 @@ function initDedicatedCasePage(caseId) {
   }
 
   function resizeWheel() {
+    if (isThinIceMode()) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = rect.width * dpr;
@@ -94,6 +97,7 @@ function initDedicatedCasePage(caseId) {
   }
 
   function drawWheel() {
+    if (isThinIceMode()) return;
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     if (!w || !h) return;
@@ -169,6 +173,40 @@ function initDedicatedCasePage(caseId) {
     return 1 - (w2 / sum) * Math.pow((1 - t) / (1 - split), pOut);
   }
 
+  function animateThinIceBreak(drop) {
+    return new Promise((resolve) => {
+      const box = document.getElementById("iceSlabBox");
+      const label = document.getElementById("iceSlabResultText");
+      box.className = "ice-slab-box shaking";
+      label.textContent = "ПРОВЕРКА ЛЬДА...";
+
+      const tickInterval = setInterval(() => {
+        playTick();
+        if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      }, 220);
+
+      setTimeout(() => {
+        box.classList.add("cracking");
+      }, 700);
+
+      setTimeout(() => {
+        clearInterval(tickInterval);
+        box.classList.remove("shaking");
+        if (drop.drop_type === "nothing") {
+          box.classList.add("broken-empty");
+          label.textContent = "ЛЁД ТРЕСНУЛ — ПУСТО";
+        } else if (Number(drop.stars_amount) >= Number(caseCfg.price || 50) * 2) {
+          box.classList.add("broken-jackpot");
+          label.textContent = `ПРОРЫВ: ${drop.label}!`;
+        } else {
+          box.classList.add("broken-small");
+          label.textContent = `НА КРАЮ: +${drop.stars_amount} ★`;
+        }
+        setTimeout(resolve, 650);
+      }, 2100);
+    });
+  }
+
   function animateWheel(winObj) {
     return new Promise((resolve) => {
       buildSlots(winObj);
@@ -225,13 +263,34 @@ function initDedicatedCasePage(caseId) {
     if (!caseCfg) return;
     document.title = `GiftezUp — ${caseCfg.name}`;
     document.getElementById("caseTitle").textContent = caseCfg.name;
-    document.getElementById("caseSub").textContent = caseCfg.is_daily
-      ? "Бесплатно раз в 24 часа · Награда зачисляется в ★"
-      : `Стоимость: ${Number(caseCfg.price)} ★ · Перекрут за ${currentRerollPrice} ★`;
+
+    const stdStage = document.getElementById("standardWheelStage");
+    const iceStage = document.getElementById("thinIceStage");
+    if (isThinIceMode()) {
+      stdStage.style.display = "none";
+      iceStage.style.display = "flex";
+    } else {
+      stdStage.style.display = "block";
+      iceStage.style.display = "none";
+    }
+
+    const limitInfo = (caseCfg.availability === "limited" && typeof caseCfg.max_opens === "number")
+      ? ` · Осталось: ${typeof caseCfg.remaining === "number" ? caseCfg.remaining : caseCfg.max_opens} из ${caseCfg.max_opens}`
+      : "";
+
+    if (caseCfg.is_daily) {
+      document.getElementById("caseSub").textContent = "Бесплатно раз в 24 часа · Награда зачисляется в ★";
+    } else if (caseCfg.reroll_allowed === false) {
+      document.getElementById("caseSub").textContent = `Стоимость: ${Number(caseCfg.price)} ★ · Без перекрута${limitInfo}`;
+    } else {
+      document.getElementById("caseSub").textContent = `Стоимость: ${Number(caseCfg.price)} ★ · Перекрут за ${currentRerollPrice} ★${limitInfo}`;
+    }
 
     const badgeEl = document.getElementById("caseTopRerollBadge");
     if (badgeEl && !caseCfg.is_daily) {
-      badgeEl.textContent = `ПЕРЕКРУТ ${currentRerollPrice} ★`;
+      badgeEl.textContent = caseCfg.reroll_allowed === false
+        ? "БЕЗ ПЕРЕКРУТА"
+        : `ПЕРЕКРУТ ${currentRerollPrice} ★`;
     }
 
     const lootBox = document.getElementById("caseLootGrid");
@@ -239,7 +298,8 @@ function initDedicatedCasePage(caseId) {
       lootBox.innerHTML = (caseCfg.items || [])
         .map((item) => {
           const isStars = item.type === "stars" || item.icon === "star";
-          const imgKey = isStars ? "bear" : (item.gift || item.icon || "bear");
+          const isNothing = item.type === "nothing" || item.gift === "nothing";
+          const imgKey = isNothing ? "nothing" : (item.gift || item.icon || "bear");
           return `
             <div class="inv-tile">
               <div class="inv-tile-art">
@@ -261,7 +321,7 @@ function initDedicatedCasePage(caseId) {
     const area = document.getElementById("caseControlsArea");
     if (!area || !caseCfg) return;
 
-    if (pendingDropId && !caseCfg.is_daily) {
+    if (pendingDropId && !caseCfg.is_daily && caseCfg.reroll_allowed !== false) {
       area.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:8px;">
           <button type="button" class="btn-main" id="btnAcceptDrop" ${isSpinning ? "disabled" : ""}>Забрать звёзды на баланс</button>
@@ -276,13 +336,29 @@ function initDedicatedCasePage(caseId) {
     let mainLabel = caseCfg.is_daily ? "Крутить бесплатно" : `Открыть за ${Number(caseCfg.price)} ★`;
     let mainDisabled = isSpinning;
 
-    if (caseCfg.is_daily) {
+    if (caseCfg.is_sold_out) {
+      mainDisabled = true;
+      mainLabel = "Кейс раскуплен";
+    } else if (caseCfg.is_locked) {
+      mainDisabled = true;
+      mainLabel = "Откроется 1 декабря в 00:00 МСК";
+    } else if (caseCfg.is_daily) {
       const now = Math.floor(Date.now() / 1000);
       const readyAt = Number(appState.next_spin_at || 0);
       if (readyAt > now) {
         mainDisabled = true;
         mainLabel = `Доступно через ${formatTimer(readyAt - now)}`;
       }
+    }
+
+    if (isThinIceMode()) {
+      area.innerHTML = `
+        <button type="button" class="btn-main" id="btnOpenCase" ${mainDisabled ? "disabled" : ""}>
+          ${isSpinning ? "Ступаем на лёд..." : mainLabel}
+        </button>
+      `;
+      document.getElementById("btnOpenCase").onclick = openCase;
+      return;
     }
 
     area.innerHTML = `
@@ -376,8 +452,10 @@ function initDedicatedCasePage(caseId) {
         return;
       }
 
-      if (typeof d.reroll_price === "number") {
-        currentRerollPrice = d.reroll_price;
+      if (typeof d.reroll_price === "number") currentRerollPrice = d.reroll_price;
+      if (typeof d.remaining === "number") {
+        caseCfg.remaining = d.remaining;
+        if (d.remaining <= 0) caseCfg.is_sold_out = true;
       }
       appState.stars_balance = d.stars_balance;
       if (typeof d.wager_left === "number") appState.wager_left = d.wager_left;
@@ -387,16 +465,21 @@ function initDedicatedCasePage(caseId) {
       saveCache(appState);
 
       const drop = d.drop;
-      await animateWheel({
-        label: drop.label,
-        type: drop.drop_type,
-        gift: drop.gift_id || "nothing",
-        icon: drop.icon || "nothing.png"
-      });
+      if (isThinIceMode()) {
+        await animateThinIceBreak(drop);
+      } else {
+        await animateWheel({
+          label: drop.label,
+          type: drop.drop_type,
+          gift: drop.gift_id || "nothing",
+          icon: drop.icon || "nothing.png"
+        });
+      }
 
       isSpinning = false;
+      renderStaticCaseInfo();
 
-      if (caseCfg.is_daily) {
+      if (caseCfg.is_daily || !d.can_reroll || !d.drop_id) {
         if (drop.drop_type !== "nothing") playWin();
         renderControls();
         showDropModal(drop);
@@ -433,9 +516,7 @@ function initDedicatedCasePage(caseId) {
         return;
       }
 
-      if (typeof d.reroll_price === "number") {
-        currentRerollPrice = d.reroll_price;
-      }
+      if (typeof d.reroll_price === "number") currentRerollPrice = d.reroll_price;
       appState.stars_balance = d.stars_balance;
       if (typeof d.wager_left === "number") appState.wager_left = d.wager_left;
       if (typeof d.withdrawable_stars === "number") appState.withdrawable_stars = d.withdrawable_stars;
