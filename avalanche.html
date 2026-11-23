@@ -9,7 +9,7 @@
   <style>
     .avalanche-arena {
       position: relative;
-      height: 220px;
+      height: 230px;
       border-radius: 22px;
       background:
         radial-gradient(circle at 50% 22%, rgba(56, 189, 248, 0.24) 0%, transparent 65%),
@@ -25,45 +25,60 @@
       transition: border-color 0.25s ease, box-shadow 0.25s ease;
     }
     .avalanche-arena.running {
-      border-color: rgba(125, 211, 252, 0.55);
-      box-shadow: inset 0 0 36px rgba(56, 189, 248, 0.2);
+      border-color: rgba(125, 211, 252, 0.65);
+      box-shadow: inset 0 0 42px rgba(56, 189, 248, 0.24);
+    }
+    .avalanche-arena.danger {
+      border-color: rgba(251, 191, 36, 0.65);
+      box-shadow: inset 0 0 44px rgba(251, 191, 36, 0.22);
+      animation: avDangerPulse 0.35s infinite alternate;
+    }
+    @keyframes avDangerPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.012); }
     }
     .avalanche-arena.crashed {
-      border-color: rgba(244, 63, 94, 0.65);
-      box-shadow: inset 0 0 40px rgba(244, 63, 94, 0.3);
-      animation: avCrashShake 0.28s ease;
+      border-color: rgba(244, 63, 94, 0.75);
+      box-shadow: inset 0 0 48px rgba(244, 63, 94, 0.36);
+      animation: avCrashShake 0.32s ease;
     }
     .avalanche-arena.won {
-      border-color: rgba(251, 191, 36, 0.7);
-      box-shadow: 0 0 28px rgba(251, 191, 36, 0.3), inset 0 0 36px rgba(251, 191, 36, 0.26);
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 32px rgba(56, 189, 248, 0.38), inset 0 0 40px rgba(56, 189, 248, 0.3);
     }
     @keyframes avCrashShake {
-      0%, 100% { transform: translateY(0); }
-      25% { transform: translateY(5px); }
-      50% { transform: translateY(-4px); }
-      75% { transform: translateY(3px); }
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-5px, 6px); }
+      40% { transform: translate(5px, -4px); }
+      60% { transform: translate(-4px, 4px); }
+      80% { transform: translate(4px, -2px); }
     }
     .avalanche-wave {
       position: absolute;
-      inset: -100% 0 0 0;
-      background: linear-gradient(180deg, rgba(224, 242, 254, 0.28) 0%, rgba(56, 189, 248, 0.08) 65%, transparent 100%);
+      inset: -110% 0 0 0;
+      background: linear-gradient(180deg, rgba(224, 242, 254, 0.42) 0%, rgba(56, 189, 248, 0.14) 55%, transparent 100%);
       pointer-events: none;
-      transform: translateY(0);
-      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: translateY(0%);
+      transition: transform 0.25s linear;
     }
     .avalanche-arena.crashed .avalanche-wave {
-      transform: translateY(50%);
+      transform: translateY(55%) !important;
+      background: linear-gradient(180deg, rgba(244, 63, 94, 0.45) 0%, rgba(244, 63, 94, 0.14) 60%, transparent 100%);
     }
     .avalanche-mult {
       position: relative;
       z-index: 2;
-      font-size: 48px;
+      font-size: 52px;
       font-weight: 900;
-      letter-spacing: -1px;
+      letter-spacing: -1.2px;
       background: linear-gradient(180deg, #ffffff 0%, #7dd3fc 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      line-height: 1.05;
+      line-height: 1.02;
+      transition: transform 0.12s ease;
+    }
+    .avalanche-arena.running .avalanche-mult {
+      transform: scale(1.04);
     }
     .avalanche-arena.crashed .avalanche-mult {
       background: linear-gradient(180deg, #fda4af 0%, #f43f5e 100%);
@@ -81,7 +96,32 @@
       font-size: 12.5px;
       font-weight: 700;
       color: var(--muted);
-      margin-top: 6px;
+      margin-top: 7px;
+    }
+    .auto-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: 13px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+    }
+    .auto-switch-btn {
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 99px;
+      border: 1px solid var(--border-strong);
+      background: #090e1c;
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .auto-switch-btn.on {
+      background: var(--ice-soft);
+      border-color: var(--ice-bright);
+      color: var(--ice-bright);
     }
   </style>
 </head>
@@ -96,29 +136,40 @@
 
     <div class="section-card fade-in">
       <div class="avalanche-arena" id="avalancheArena">
-        <div class="avalanche-wave"></div>
+        <div class="avalanche-wave" id="avWave"></div>
         <div class="avalanche-mult" id="avMultText">1.00x</div>
-        <div class="avalanche-status" id="avStatusText">Выбери ставку и цель выхода до схода лавины</div>
+        <div class="avalanche-status" id="avStatusText">Нажми «Запустить» и успей забрать звёзды до схода лавины</div>
       </div>
 
-      <div class="grid-2">
-        <div>
-          <div class="row-sub" style="margin-bottom:4px;">Ставка (★)</div>
-          <input type="number" class="field-input" id="avBetInput" min="1" max="2000" value="10" />
-        </div>
-        <div>
-          <div class="row-sub" style="margin-bottom:4px;">Авто-выход (x)</div>
-          <input type="number" class="field-input" id="avTargetInput" min="1.1" max="25" step="0.1" value="1.5" />
-        </div>
+      <div>
+        <div class="row-sub" style="margin-bottom:4px;">Ставка (★)</div>
+        <input type="number" class="field-input" id="avBetInput" min="1" max="2000" value="10" />
       </div>
 
       <div class="chips-row-3">
-        <button type="button" class="btn-soft" data-av-mult="1.3">1.30x</button>
-        <button type="button" class="btn-soft" data-av-mult="2.0">2.00x</button>
-        <button type="button" class="btn-soft" data-av-mult="3.5">3.50x</button>
+        <button type="button" class="btn-soft" data-av-bet="5">5 ★</button>
+        <button type="button" class="btn-soft" data-av-bet="25">25 ★</button>
+        <button type="button" class="btn-soft" data-av-bet="50">50 ★</button>
       </div>
 
-      <button type="button" class="btn-main" id="btnStartAvalanche">Запустить раунд</button>
+      <div class="auto-toggle-row">
+        <div>
+          <div class="row-title">Авто-выход</div>
+          <div class="row-sub">Забирать автоматически на заданном x</div>
+        </div>
+        <button type="button" class="auto-switch-btn" id="btnToggleAutoCash">ВЫКЛ</button>
+      </div>
+
+      <div id="autoCashConfigBox" style="display:none;flex-direction:column;gap:8px;">
+        <input type="number" class="field-input" id="avTargetInput" min="1.1" max="25" step="0.1" value="1.5" placeholder="Множитель авто-выхода (напр. 1.5)" />
+        <div class="chips-row-3">
+          <button type="button" class="btn-soft" data-av-mult="1.3">1.30x</button>
+          <button type="button" class="btn-soft" data-av-mult="2.0">2.00x</button>
+          <button type="button" class="btn-soft" data-av-mult="3.5">3.50x</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn-main" id="btnAvalancheAction">Запустить раунд</button>
     </div>
   </div>
 
@@ -127,6 +178,13 @@
     (function () {
       let appState = null;
       let running = false;
+      let cashingOut = false;
+      let autoCashEnabled = false;
+      let activeRoundId = "";
+      let activeBet = 0;
+      let currentMult = 1.0;
+      let crashMult = 1.0;
+      let rafId = null;
 
       const session = initGiftezPage("home", {
         onStateReady(fresh) {
@@ -136,6 +194,29 @@
       if (!session) return;
       appState = session.state;
 
+      const btnAction = document.getElementById("btnAvalancheAction");
+      const arena = document.getElementById("avalancheArena");
+      const waveEl = document.getElementById("avWave");
+      const multEl = document.getElementById("avMultText");
+      const statusEl = document.getElementById("avStatusText");
+      const btnAutoToggle = document.getElementById("btnToggleAutoCash");
+      const autoBox = document.getElementById("autoCashConfigBox");
+
+      btnAutoToggle.onclick = () => {
+        if (running) return;
+        autoCashEnabled = !autoCashEnabled;
+        btnAutoToggle.textContent = autoCashEnabled ? "ВКЛ" : "ВЫКЛ";
+        btnAutoToggle.classList.toggle("on", autoCashEnabled);
+        autoBox.style.display = autoCashEnabled ? "flex" : "none";
+      };
+
+      document.querySelectorAll("[data-av-bet]").forEach((btn) => {
+        btn.onclick = () => {
+          if (running) return;
+          document.getElementById("avBetInput").value = btn.getAttribute("data-av-bet");
+        };
+      });
+
       document.querySelectorAll("[data-av-mult]").forEach((btn) => {
         btn.onclick = () => {
           if (running) return;
@@ -143,84 +224,177 @@
         };
       });
 
-      document.getElementById("btnStartAvalanche").onclick = async () => {
+      async function performCashout(multToClaim) {
+        if (!running || cashingOut || !activeRoundId) return;
+        cashingOut = true;
+        if (rafId) cancelAnimationFrame(rafId);
+
+        btnAction.disabled = true;
+        btnAction.textContent = "Забираем...";
+
+        try {
+          const r = await fetch(apiUrl("/api/avalanche_cashout"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              initData: tg.initData,
+              round_id: activeRoundId,
+              mult: multToClaim
+            })
+          });
+          const d = await r.json();
+
+          running = false;
+          cashingOut = false;
+          activeRoundId = "";
+          btnAction.disabled = false;
+          btnAction.className = "btn-main";
+          btnAction.textContent = "Запустить раунд";
+
+          if (!d.ok) {
+            arena.className = "avalanche-arena crashed";
+            statusEl.textContent = d.message || "Лавина накрыла раньше!";
+            toast(d.message || "Не успел забрать");
+            return;
+          }
+
+          appState.stars_balance = d.stars_balance;
+          appState.wager_left = d.wager_left;
+          appState.withdrawable_stars = d.withdrawable_stars;
+          updateStarsDisplay(appState.stars_balance);
+          saveCache(appState);
+
+          arena.className = "avalanche-arena won";
+          multEl.textContent = `${Number(d.mult).toFixed(2)}x`;
+          statusEl.textContent = `Успел забрать! Выигрыш: +${d.payout} ★`;
+          playWin();
+          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+          toast(`Забрано ${Number(d.mult).toFixed(2)}x (+${d.payout} ★)!`);
+        } catch (_) {
+          running = false;
+          cashingOut = false;
+          btnAction.disabled = false;
+          btnAction.className = "btn-main";
+          btnAction.textContent = "Запустить раунд";
+          toast("Ошибка сети");
+        }
+      }
+
+      async function startRound() {
         if (running) return;
         const bet = Math.max(1, Math.floor(Number(document.getElementById("avBetInput").value || 0)));
-        const target = Math.max(1.1, Number(document.getElementById("avTargetInput").value || 1.5));
+        const autoTarget = autoCashEnabled
+          ? Math.max(1.1, Number(document.getElementById("avTargetInput").value || 1.5))
+          : 0;
+
         if (!tg?.initData) {
           toast("Открой в Telegram");
           return;
         }
 
-        running = true;
-        const btn = document.getElementById("btnStartAvalanche");
-        const arena = document.getElementById("avalancheArena");
-        const multEl = document.getElementById("avMultText");
-        const statusEl = document.getElementById("avStatusText");
-
-        btn.disabled = true;
+        btnAction.disabled = true;
         arena.className = "avalanche-arena running";
+        waveEl.style.transform = "translateY(0%)";
         statusEl.textContent = "Лавина набирает скорость...";
 
         try {
-          const r = await fetch(apiUrl("/api/avalanche_play"), {
+          const r = await fetch(apiUrl("/api/avalanche_start"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               initData: tg.initData,
               bet_stars: bet,
-              target_mult: target
+              auto_enabled: autoCashEnabled,
+              auto_mult: autoTarget
             })
           });
           const d = await r.json();
           if (!d.ok) {
-            running = false;
-            btn.disabled = false;
+            btnAction.disabled = false;
             arena.className = "avalanche-arena";
             toast(d.message || "Ошибка запуска");
             return;
           }
 
-          const stopAt = d.won ? target : Number(d.crash_mult || 1.0);
-          let cur = 1.0;
-          const timer = setInterval(() => {
-            cur = Number((cur + 0.035 + cur * 0.024).toFixed(2));
-            if (cur >= stopAt) {
-              cur = stopAt;
-              clearInterval(timer);
-              multEl.textContent = `${cur.toFixed(2)}x`;
+          appState.stars_balance = d.stars_balance;
+          appState.wager_left = d.wager_left;
+          appState.withdrawable_stars = d.withdrawable_stars;
+          updateStarsDisplay(appState.stars_balance);
+          saveCache(appState);
 
-              appState.stars_balance = d.stars_balance;
-              appState.wager_left = d.wager_left;
-              appState.withdrawable_stars = d.withdrawable_stars;
-              updateStarsDisplay(appState.stars_balance);
-              saveCache(appState);
+          activeRoundId = d.round_id;
+          activeBet = bet;
+          crashMult = Number(d.crash_mult || 1.0);
+          currentMult = 1.0;
+          running = true;
+          cashingOut = false;
 
+          btnAction.disabled = false;
+          btnAction.className = "btn-main gold-btn";
+          btnAction.textContent = `Забрать (${bet} ★)`;
+
+          const t0 = performance.now();
+          let lastTickStep = 0;
+
+          function loop(now) {
+            if (!running || cashingOut) return;
+            const elapsedSec = (now - t0) / 1000;
+            // Плавный экспоненциальный рост множителя
+            currentMult = Number(Math.pow(1.16, elapsedSec * 2.4).toFixed(2));
+
+            if (autoCashEnabled && autoTarget > 1.0 && currentMult >= autoTarget && crashMult >= autoTarget) {
+              currentMult = autoTarget;
+              multEl.textContent = `${currentMult.toFixed(2)}x`;
+              performCashout(autoTarget);
+              return;
+            }
+
+            if (currentMult >= crashMult) {
+              currentMult = crashMult;
               running = false;
-              btn.disabled = false;
+              activeRoundId = "";
+              multEl.textContent = `${currentMult.toFixed(2)}x`;
+              arena.className = "avalanche-arena crashed";
+              statusEl.textContent = `Накрыло лавиной на ${currentMult.toFixed(2)}x`;
+              btnAction.className = "btn-main";
+              btnAction.textContent = "Запустить раунд";
+              if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
+              toast(`Лавина сошла на ${currentMult.toFixed(2)}x`);
+              return;
+            }
 
-              if (d.won) {
-                arena.className = "avalanche-arena won";
-                statusEl.textContent = `Успел забрать! Выигрыш: +${d.payout} ★`;
-                playWin();
-                if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
-                toast(`Забрано ${cur.toFixed(2)}x (+${d.payout} ★)!`);
-              } else {
-                arena.className = "avalanche-arena crashed";
-                statusEl.textContent = `Накрыло лавиной на ${cur.toFixed(2)}x`;
-                if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
-                toast("Лавина сошла раньше цели");
-              }
-            } else {
-              multEl.textContent = `${cur.toFixed(2)}x`;
+            multEl.textContent = `${currentMult.toFixed(2)}x`;
+            const estPayout = Math.max(1, Math.round(activeBet * currentMult));
+            btnAction.textContent = `Забрать (${estPayout} ★)`;
+
+            const waveProgress = Math.min(34, (currentMult - 1) * 9);
+            waveEl.style.transform = `translateY(${waveProgress}%)`;
+            if (currentMult >= 2.2) {
+              arena.classList.add("danger");
+            }
+
+            const tickStep = Math.floor(currentMult * 10);
+            if (tickStep !== lastTickStep) {
+              lastTickStep = tickStep;
               playTick();
             }
-          }, 52);
+
+            rafId = requestAnimationFrame(loop);
+          }
+
+          rafId = requestAnimationFrame(loop);
         } catch (_) {
-          running = false;
-          btn.disabled = false;
+          btnAction.disabled = false;
           arena.className = "avalanche-arena";
           toast("Ошибка сети");
+        }
+      }
+
+      btnAction.onclick = () => {
+        if (running) {
+          performCashout(currentMult);
+        } else {
+          startRound();
         }
       };
     })();

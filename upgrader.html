@@ -9,7 +9,7 @@
   <style>
     .upgrader-hero-card {
       background:
-        radial-gradient(circle at 50% 18%, rgba(56, 189, 248, 0.16) 0%, transparent 60%),
+        radial-gradient(circle at 50% 18%, rgba(56, 189, 248, 0.18) 0%, transparent 60%),
         linear-gradient(180deg, #121c33 0%, #0b1120 100%);
       border: 1px solid var(--border-strong);
       border-radius: 24px;
@@ -18,12 +18,30 @@
       flex-direction: column;
       gap: 12px;
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .upgrader-hero-card.win-glow {
+      border-color: rgba(125, 211, 252, 0.75);
+      box-shadow: 0 0 34px rgba(56, 189, 248, 0.32), 0 18px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .upgrader-hero-card.lose-glow {
+      border-color: rgba(244, 63, 94, 0.65);
+      box-shadow: 0 0 28px rgba(244, 63, 94, 0.24), 0 18px 40px rgba(0, 0, 0, 0.45);
+      animation: upLoseShake 0.28s ease;
+    }
+
+    @keyframes upLoseShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
     }
 
     .dial-stage {
       position: relative;
-      width: 262px;
-      height: 262px;
+      width: 266px;
+      height: 266px;
       margin: 0 auto 4px;
       display: flex;
       align-items: center;
@@ -32,11 +50,17 @@
 
     .dial-ambient-ring {
       position: absolute;
-      inset: 8px;
+      inset: 6px;
       border-radius: 50%;
-      border: 1px solid rgba(125, 211, 252, 0.12);
-      box-shadow: inset 0 0 32px rgba(56, 189, 248, 0.08);
+      border: 1px dashed rgba(125, 211, 252, 0.22);
+      box-shadow: inset 0 0 36px rgba(56, 189, 248, 0.1);
       pointer-events: none;
+      animation: spinAmbientSlow 24s linear infinite;
+    }
+
+    @keyframes spinAmbientSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     .dial-center-disc {
@@ -44,7 +68,7 @@
       inset: 58px;
       border-radius: 50%;
       background: radial-gradient(circle at 50% 25%, #182644 0%, #0a0f1c 100%);
-      border: 1px solid rgba(148, 197, 255, 0.24);
+      border: 1px solid rgba(148, 197, 255, 0.26);
       box-shadow:
         0 10px 26px rgba(0, 0, 0, 0.55),
         inset 0 0 24px rgba(56, 189, 248, 0.16);
@@ -54,14 +78,14 @@
       justify-content: center;
       text-align: center;
       pointer-events: none;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      transition: transform 0.28s ease, box-shadow 0.28s ease;
     }
 
     .dial-center-disc.spinning {
-      transform: scale(1.03);
+      transform: scale(1.045);
       box-shadow:
-        0 12px 30px rgba(56, 189, 248, 0.26),
-        inset 0 0 30px rgba(56, 189, 248, 0.28);
+        0 12px 32px rgba(56, 189, 248, 0.34),
+        inset 0 0 32px rgba(56, 189, 248, 0.32);
     }
 
     .dial-mult-big {
@@ -81,7 +105,6 @@
       margin-top: 4px;
     }
 
-    /* Две карточки под барабаном */
     .duel-cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -131,7 +154,6 @@
       filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
     }
 
-    /* Вкладки Звёзды / Подарки */
     .up-tabs {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -231,18 +253,16 @@
       <span class="pill-ice">АПГРЕЙДЕР</span>
     </div>
 
-    <div class="upgrader-hero-card fade-in">
-      <!-- Двойной барабан с долгим плавным замедлением -->
+    <div class="upgrader-hero-card fade-in" id="upgraderCard">
       <div class="dial-stage">
         <div class="dial-ambient-ring"></div>
-        <canvas id="upgradeDial" width="262" height="262"></canvas>
+        <canvas id="upgradeDial" width="266" height="266"></canvas>
         <div class="dial-center-disc" id="dialCenterDisc">
           <div class="dial-mult-big" id="upMultText">x1.50</div>
-          <div class="dial-chance-sub" id="upPctText">Шанс 60.0%</div>
+          <div class="dial-chance-sub" id="upPctText">Шанс 48.0%</div>
         </div>
       </div>
 
-      <!-- Две карточки: Ваша ставка | Цель апгрейда -->
       <div class="duel-cards">
         <div class="duel-card interactive" id="focusStakeCard" style="cursor:pointer;">
           <div class="duel-label">Ваша ставка</div>
@@ -260,16 +280,13 @@
         </div>
       </div>
 
-      <!-- Кнопка Апгрейд -->
       <button type="button" class="btn-main" id="btnRunUpgrade">Апгрейд</button>
 
-      <!-- Вкладки Звёзды / Подарки -->
       <div class="up-tabs">
         <button type="button" class="up-tab-btn active" id="tabUpStars">Звёзды</button>
         <button type="button" class="up-tab-btn" id="tabUpGifts">Подарки</button>
       </div>
 
-      <!-- Панель Звёзды -->
       <div id="paneUpStars" style="display:flex;flex-direction:column;gap:8px;">
         <div class="stake-input-box">
           <div class="row-sub" style="margin-bottom:4px;">Введите сумму ставки</div>
@@ -286,7 +303,6 @@
         </div>
       </div>
 
-      <!-- Панель Подарки -->
       <div id="paneUpGifts" style="display:none;flex-direction:column;gap:8px;">
         <div class="row-sub">Выбери целевой подарок (выигрыш начисляется в ★ на баланс)</div>
         <div class="targets-grid" id="upTargetsGrid"></div>
@@ -316,32 +332,29 @@
       function getChance() {
         const bet = getBet();
         if (bet >= selected.stars) return 0;
-        return Math.min(80, Math.max(1, Number(((bet / Math.max(1, selected.stars)) * 90).toFixed(1))));
+        return Math.min(65, Math.max(1, Number(((bet / Math.max(1, selected.stars)) * 72).toFixed(1))));
       }
 
       function drawDial(pct, deg, speedNorm = 0) {
         const w = canvas.width;
         const cx = w / 2;
         const cy = w / 2;
-        const outerR = 110;
-        const innerR = 87;
+        const outerR = 112;
+        const innerR = 88;
         g.clearRect(0, 0, w, w);
 
-        // Внешнее тёмное кольцо
         g.beginPath();
         g.arc(cx, cy, outerR, 0, Math.PI * 2);
         g.strokeStyle = "rgba(148, 197, 255, 0.1)";
         g.lineWidth = 15;
         g.stroke();
 
-        // Внутреннее кольцо
         g.beginPath();
         g.arc(cx, cy, innerR, 0, Math.PI * 2);
         g.strokeStyle = "rgba(148, 197, 255, 0.07)";
         g.lineWidth = 12;
         g.stroke();
 
-        // Деления по кругу
         for (let i = 0; i < 48; i++) {
           const a = (i * 7.5) * (Math.PI / 180);
           const isMajor = i % 4 === 0;
@@ -350,12 +363,11 @@
           g.beginPath();
           g.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
           g.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
-          g.strokeStyle = isMajor ? "rgba(186, 230, 253, 0.32)" : "rgba(148, 197, 255, 0.14)";
+          g.strokeStyle = isMajor ? "rgba(186, 230, 253, 0.34)" : "rgba(148, 197, 255, 0.14)";
           g.lineWidth = isMajor ? 1.8 : 1.1;
           g.stroke();
         }
 
-        // Светящаяся дуга шанса
         if (pct > 0) {
           const start = -Math.PI / 2;
           const end = start + (Math.PI * 2 * (pct / 100));
@@ -369,8 +381,8 @@
           }
 
           g.save();
-          g.shadowColor = flashColor || "rgba(56, 189, 248, 0.55)";
-          g.shadowBlur = 14;
+          g.shadowColor = flashColor || "rgba(56, 189, 248, 0.6)";
+          g.shadowBlur = 16;
           g.beginPath();
           g.arc(cx, cy, outerR, start, end);
           g.strokeStyle = grad;
@@ -380,25 +392,23 @@
           g.restore();
         }
 
-        // Световой шлейф за стрелкой при быстром вращении
-        if (speedNorm > 0.04) {
-          const tailSpan = Math.min(48, speedNorm * 52) * (Math.PI / 180);
+        if (speedNorm > 0.03) {
+          const tailSpan = Math.min(64, speedNorm * 68) * (Math.PI / 180);
           const headRad = (-90 + deg) * (Math.PI / 180);
           g.beginPath();
           g.arc(cx, cy, outerR, headRad - tailSpan, headRad);
-          g.strokeStyle = `rgba(186, 230, 253, ${Math.min(0.45, speedNorm * 0.5)})`;
-          g.lineWidth = 11;
+          g.strokeStyle = `rgba(186, 230, 253, ${Math.min(0.55, speedNorm * 0.6)})`;
+          g.lineWidth = 12;
           g.lineCap = "round";
           g.stroke();
         }
 
-        // Неоново-ледяной указатель (стрелка)
         g.save();
         g.translate(cx, cy);
         g.rotate((deg * Math.PI) / 180);
 
         g.shadowColor = "rgba(125, 211, 252, 0.95)";
-        g.shadowBlur = 16;
+        g.shadowBlur = 18;
 
         g.beginPath();
         g.moveTo(0, -outerR + 19);
@@ -458,11 +468,10 @@
         });
       }
 
-      // Плавная кривая: мягкий разгон в начале + долгое напряжённое замедление в конце
       function smoothUpgradeCurve(t) {
-        const split = 0.18;
+        const split = 0.16;
         const pIn = 2.0;
-        const pOut = 5.2;
+        const pOut = 5.4;
         const w1 = split / pIn;
         const w2 = (1 - split) / pOut;
         const sum = w1 + w2;
@@ -475,7 +484,7 @@
       function animatePointer(totalDeg) {
         return new Promise((resolve) => {
           const t0 = performance.now();
-          const dur = 5800; // Дольше и плавнее замедление
+          const dur = 6100;
           const pct = getChance();
           const startDeg = pointerDeg % 360;
           const deltaDeg = totalDeg - startDeg;
@@ -583,6 +592,8 @@
 
         busy = true;
         flashColor = null;
+        const card = document.getElementById("upgraderCard");
+        card.className = "upgrader-hero-card fade-in";
         const btn = document.getElementById("btnRunUpgrade");
         btn.disabled = true;
 
@@ -604,8 +615,7 @@
             return;
           }
 
-          // 8 полных оборотов + точный сектор выпадения для длинного напряжённого докрута
-          const finalDeg = 360 * 8 + (Number(d.roll || 50) / 100) * 360;
+          const finalDeg = 360 * 9 + (Number(d.roll || 50) / 100) * 360;
           await animatePointer(finalDeg);
 
           appState.stars_balance = d.stars_balance;
@@ -619,12 +629,14 @@
 
           if (d.won) {
             flashColor = "#7dd3fc";
+            card.classList.add("win-glow");
             syncUI();
             playWin();
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
             toast(`Апгрейд успешен! +${selected.stars} ★ на баланс`);
           } else {
             flashColor = "#f43f5e";
+            card.classList.add("lose-glow");
             syncUI();
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
             toast("Апгрейд не зашёл");

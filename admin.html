@@ -38,14 +38,14 @@
       </div>
     </div>
 
-    <!-- Пополнение запаса лимитированных кейсов -->
+    <!-- Управление запасом лимитированных кейсов -->
     <div class="section-card fade-in">
       <div class="card-head">
-        <h2>Пополнить запас кейсов</h2>
+        <h2>Запас лимитных кейсов</h2>
         <span class="pill-ice">ЛИМИТКИ</span>
       </div>
       <div class="note-box" id="stockStatusBox">
-        Выбери лимитированный кейс и укажи, сколько открытий добавить в запас.
+        Выбери лимитированный кейс. «Пополнить остаток» возвращает доступные штуки в пределах исходного лимита.
       </div>
       <select class="field-input" id="admStockCaseSelect">
         <option value="snow_chest">Снежный сундук (20 ★)</option>
@@ -54,9 +54,26 @@
         <option value="ice_throne">Ледяной трон (150 ★)</option>
         <option value="thin_ice">Тонкий лёд (50 ★)</option>
       </select>
+      <input type="number" class="field-input" id="admStockAmountInput" min="1" value="10" placeholder="Количество штук" />
       <div class="grid-2">
-        <input type="number" class="field-input" id="admStockAddAmount" min="1" value="25" placeholder="+ штук" />
-        <button type="button" class="btn-ice-sm" id="admRestockBtn">Пополнить запас</button>
+        <button type="button" class="btn-ice-sm" id="admRestockAddBtn">Пополнить остаток</button>
+        <button type="button" class="btn-soft" id="admStockSetTotalBtn">Задать общий лимит</button>
+      </div>
+    </div>
+
+    <!-- Управление ивентом «Снегопад» -->
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Ивент «Снегопад»</h2>
+        <span class="pill-ice">СБРОС</span>
+      </div>
+      <div class="note-box">
+        Сбрасывает снежинки и пройденные этапы ивента до нуля.
+      </div>
+      <input type="text" class="field-input" id="admEventUserInput" placeholder="@username игрока для сброса" />
+      <div class="grid-2">
+        <button type="button" class="btn-soft" id="admResetEventOneBtn">Сброс игроку</button>
+        <button type="button" class="btn-red-sm" id="admResetEventAllBtn">Сброс ВСЕМ</button>
       </div>
     </div>
 
@@ -149,7 +166,7 @@
           const rem = typeof found.remaining === "number" ? found.remaining : found.max_opens;
           box.innerHTML = `Сейчас в наличии: <b>${rem} из ${found.max_opens} шт.</b>`;
         } else {
-          box.textContent = "Выбери лимитированный кейс и укажи количество для пополнения.";
+          box.textContent = "Выбери лимитированный кейс для управления запасом.";
         }
       }
 
@@ -240,6 +257,23 @@
         }
       }
 
+      async function updateCaseStock(actionType, btnEl) {
+        const case_id = document.getElementById("admStockCaseSelect").value;
+        const amount = Math.max(1, Math.floor(Number(document.getElementById("admStockAmountInput").value || 0)));
+        if (!amount) {
+          toast("Укажи количество");
+          return;
+        }
+        btnEl.disabled = true;
+        const d = await adminPost("/api/admin/restock_case", { case_id, action: actionType, amount });
+        btnEl.disabled = false;
+        if (d) {
+          toast(d.message || "Запас обновлён");
+          await session.syncFromServer();
+          syncStockInfo();
+        }
+      }
+
       async function loadRequests() {
         const box = document.getElementById("admReqsList");
         const d = await adminPost("/api/admin/requests", {});
@@ -310,17 +344,34 @@
       loadRequests();
 
       document.getElementById("admStockCaseSelect").onchange = syncStockInfo;
-      const btnRestock = document.getElementById("admRestockBtn");
-      btnRestock.onclick = async () => {
-        const case_id = document.getElementById("admStockCaseSelect").value;
-        const add_amount = Math.max(1, Math.floor(Number(document.getElementById("admStockAddAmount").value || 0)));
-        btnRestock.disabled = true;
-        const d = await adminPost("/api/admin/restock_case", { case_id, add_amount });
-        btnRestock.disabled = false;
+      const btnRestockAdd = document.getElementById("admRestockAddBtn");
+      const btnStockTotal = document.getElementById("admStockSetTotalBtn");
+      btnRestockAdd.onclick = () => updateCaseStock("add", btnRestockAdd);
+      btnStockTotal.onclick = () => updateCaseStock("set_total", btnStockTotal);
+
+      const btnEvOne = document.getElementById("admResetEventOneBtn");
+      const btnEvAll = document.getElementById("admResetEventAllBtn");
+      btnEvOne.onclick = async () => {
+        const username = document.getElementById("admEventUserInput").value.trim();
+        if (!username) {
+          toast("Введи @username игрока");
+          return;
+        }
+        btnEvOne.disabled = true;
+        const d = await adminPost("/api/admin/reset_event", { scope: "one", username });
+        btnEvOne.disabled = false;
         if (d) {
-          toast(d.message || "Запас кейса пополнен");
+          toast(d.message || "Ивент игрока сброшен");
           await session.syncFromServer();
-          syncStockInfo();
+        }
+      };
+      btnEvAll.onclick = async () => {
+        btnEvAll.disabled = true;
+        const d = await adminPost("/api/admin/reset_event", { scope: "all" });
+        btnEvAll.disabled = false;
+        if (d) {
+          toast(d.message || "Ивент сброшен всем");
+          await session.syncFromServer();
         }
       };
 
