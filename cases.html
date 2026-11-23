@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GiftezUp — Кейсы</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="headerMount"></div>
+
+    <div class="sec-row fade-in">
+      <a class="btn-mini-refresh" href="index.html">&lt; Назад</a>
+      <span class="pill-ice">ВИТРИНА КЕЙСОВ</span>
+    </div>
+
+    <div id="casesCatalogMount"></div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    (function () {
+      let appState = null;
+      let activeCategory = "all";
+
+      function renderCasesCatalog() {
+        const host = document.getElementById("casesCatalogMount");
+        if (!host) return;
+
+        const sourceList = (appState && Array.isArray(appState.cases) && appState.cases.length)
+          ? appState.cases
+          : DEFAULT_CASES_LIST;
+
+        const paidCases = sourceList.filter((c) => !c.is_daily && c.id !== "daily");
+        const hasWinterNew = paidCases.some((c) => c.is_winter_new);
+
+        const categories = [
+          { id: "all", label: "Все" },
+          { id: "snowflakes", label: "Снежинки (до 10 ★)" },
+          { id: "drifts", label: "Сугробы (15–50 ★)" },
+          { id: "aurora", label: "Северное сияние (60–150 ★)" },
+          { id: "thin_ice", label: "Тонкий лёд" },
+          { id: "limited", label: "Лимитки и Ивент" }
+        ];
+
+        const filtered = !hasWinterNew
+          ? paidCases
+          : paidCases.filter((c) => {
+              if (activeCategory === "all") return true;
+              if (activeCategory === "limited") {
+                return c.availability === "limited" || c.availability === "timed";
+              }
+              return c.category === activeCategory;
+            });
+
+        const tabsHtml = hasWinterNew
+          ? `<div class="cat-tabs-scroll fade-in" style="margin-bottom:10px;">
+              ${categories
+                .map(
+                  (cat) => `
+                    <button type="button" class="cat-tab-btn ${activeCategory === cat.id ? "active" : ""}" data-cat="${cat.id}">
+                      ${escapeHtml(cat.label)}
+                    </button>
+                  `
+                )
+                .join("")}
+            </div>`
+          : "";
+
+        const now = Math.floor(Date.now() / 1000);
+        const startTs = Number(appState?.event_start_ts || 1796072400);
+
+        const cardsHtml = filtered
+          .map((c) => {
+            const href = `case.html?id=${encodeURIComponent(c.id)}`;
+            const isSoldOut = Boolean(c.is_sold_out);
+            const hasLimit = c.availability === "limited" && typeof c.max_opens === "number";
+            const rem = typeof c.remaining === "number" ? c.remaining : c.max_opens;
+            const isHiddenBeforeDec1 = Boolean(c.is_winter_new && now < startTs);
+
+            let tierCls = "";
+            if (c.special_mode === "thin_ice") tierCls = "tier-thin-ice";
+            else if (Number(c.price) >= 75 || c.id === "newyear") tierCls = "tier-gold";
+            else if (Number(c.price) >= 20 || c.id === "morozniy") tierCls = "tier-indigo";
+
+            const limitLine = hasLimit
+              ? `<div class="case-limit-line">Осталось: <b>${rem}</b> из ${c.max_opens}</div>`
+              : (c.availability === "timed"
+                  ? `<div class="case-limit-line">Временный кейс</div>`
+                  : `<div class="case-limit-line">${c.reroll_allowed === false ? "Без перекрута" : `Перекрут ${Number(c.reroll_price || 0)} ★`}</div>`);
+
+            const btnText = isSoldOut ? "РАСКУПЛЕН" : `${Number(c.price)} ★`;
+
+            return `
+              <a class="case-card-link ${tierCls} ${isSoldOut ? "is-disabled-card" : ""}" href="${href}">
+                <span class="case-tag">${escapeHtml(isHiddenBeforeDec1 ? "СКРЫТ ДО 1 ДЕК" : (c.badge || "ЗИМА"))}</span>
+                <div class="case-art">
+                  <img src="./${escapeHtml(c.icon || "starter.png")}" onerror="this.src=getFallbackSrc('${escapeHtml(c.id)}')" alt="${escapeHtml(c.name)}" />
+                </div>
+                <div class="case-name">${escapeHtml(c.name)}</div>
+                ${limitLine}
+                <div class="case-btn-pill">${btnText}</div>
+              </a>
+            `;
+          })
+          .join("");
+
+        host.innerHTML = `
+          ${tabsHtml}
+          <div class="cases-grid-2 fade-in">${cardsHtml || `<div class="empty-box" style="grid-column:1/-1;">В этой категории пока нет кейсов</div>`}</div>
+        `;
+
+        host.querySelectorAll("[data-cat]").forEach((btn) => {
+          btn.onclick = () => {
+            activeCategory = btn.getAttribute("data-cat") || "all";
+            renderCasesCatalog();
+          };
+        });
+      }
+
+      const session = initGiftezPage("home", {
+        onStateReady(fresh) {
+          appState = fresh;
+          renderCasesCatalog();
+        }
+      });
+      if (!session) return;
+      appState = session.state;
+      renderCasesCatalog();
+    })();
+  </script>
+</body>
+</html>

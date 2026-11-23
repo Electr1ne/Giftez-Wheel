@@ -12,7 +12,7 @@
     <div id="headerMount"></div>
 
     <div class="sec-row fade-in">
-      <a class="btn-mini-refresh" href="index.html">&lt; Назад</a>
+      <a class="btn-mini-refresh" id="caseBackBtn" href="cases.html">&lt; Назад</a>
       <span class="pill-ice" id="caseTopRerollBadge">КЕЙС</span>
     </div>
 
@@ -22,15 +22,16 @@
         <p id="caseSub">Загрузка...</p>
       </div>
 
-      <!-- Обычная рулетка -->
+      <!-- Стандартная рулетка -->
       <div class="wheel-stage" id="standardWheelStage">
         <div class="center-frame"></div>
         <canvas id="rouletteCanvas"></canvas>
       </div>
 
-      <!-- Особая сцена для «Тонкого льда» (раскол ледяной плиты без обычной рулетки) -->
+      <!-- Особая сцена для «Тонкого льда» (многослойный раскол ледяной плиты + осколки) -->
       <div class="thin-ice-stage" id="thinIceStage" style="display:none;">
         <div class="ice-slab-box" id="iceSlabBox">
+          <div class="ice-pulse-ring"></div>
           <div class="ice-slab-core" id="iceSlabCore">
             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#bae6fd" stroke-width="1.8">
               <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z"/>
@@ -43,7 +44,9 @@
             <path class="crack-line c1" d="M100 0 L92 38 L108 65 L95 95 L103 140" />
             <path class="crack-line c2" d="M0 68 L48 62 L85 74 L125 60 L200 72" />
             <path class="crack-line c3" d="M35 12 L75 48 L128 92 L170 130" />
+            <path class="crack-line c4" d="M168 14 L126 52 L74 96 L30 132" />
           </svg>
+          <div class="ice-shards-layer" id="iceShardsLayer"></div>
         </div>
       </div>
 
@@ -65,6 +68,9 @@
     (function () {
       const params = new URLSearchParams(window.location.search);
       const cid = params.get("id") || "starter";
+      if (cid === "daily") {
+        document.getElementById("caseBackBtn").href = "index.html";
+      }
       initDedicatedCasePage(cid);
     })();
   </script>

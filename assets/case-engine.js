@@ -48,12 +48,13 @@ function initDedicatedCasePage(caseId) {
   const ITEM_H = 140;
   const GAP = 10;
   const STEP = ITEM_W + GAP;
-  const TOTAL_SLOTS = 74;
-  const WIN_SLOT = 60;
+  const TOTAL_SLOTS = 82;
+  const WIN_SLOT = 68;
 
   let wheelSlots = [];
   let scrollX = 2 * STEP;
   let lastTickSlot = -1;
+  let winGlowAlpha = 0;
 
   function buildSlots(winObj = null) {
     const pool = (caseCfg && caseCfg.items && caseCfg.items.length)
@@ -111,8 +112,8 @@ function initDedicatedCasePage(caseId) {
       if (ix < -ITEM_W || ix > w + ITEM_W) continue;
 
       const dist = Math.abs(ix - cx);
-      const focus = Math.max(0, 1 - dist / 140);
-      const scale = 0.94 + focus * 0.06;
+      const focus = Math.max(0, 1 - dist / 145);
+      const scale = 0.92 + focus * 0.08 + (i === WIN_SLOT ? winGlowAlpha * 0.04 : 0);
       const cw = ITEM_W * scale;
       const ch = ITEM_H * scale;
       const x = ix - cw / 2;
@@ -123,33 +124,37 @@ function initDedicatedCasePage(caseId) {
       const isStars = slot.type === "stars" || slot.icon === "star";
 
       ctx.save();
-      roundRect(x, y, cw, ch, 15 * scale);
+      if (i === WIN_SLOT && winGlowAlpha > 0) {
+        ctx.shadowColor = isStars ? "rgba(251, 191, 36, 0.7)" : "rgba(56, 189, 248, 0.75)";
+        ctx.shadowBlur = 22 * winGlowAlpha;
+      }
+      roundRect(x, y, cw, ch, 16 * scale);
 
       if (isStars) {
-        ctx.fillStyle = "rgba(251, 191, 36, 0.14)";
-        ctx.strokeStyle = "rgba(251, 191, 36, 0.52)";
+        ctx.fillStyle = "rgba(251, 191, 36, 0.16)";
+        ctx.strokeStyle = "rgba(251, 191, 36, 0.56)";
       } else if (!isNothing) {
-        ctx.fillStyle = "rgba(56, 189, 248, 0.16)";
-        ctx.strokeStyle = "rgba(125, 211, 252, 0.56)";
+        ctx.fillStyle = "rgba(56, 189, 248, 0.17)";
+        ctx.strokeStyle = "rgba(125, 211, 252, 0.58)";
       } else {
         ctx.fillStyle = "rgba(255, 255, 255, 0.035)";
         ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
       }
       ctx.fill();
-      ctx.lineWidth = focus > 0.7 ? 1.6 : 1;
+      ctx.lineWidth = focus > 0.7 ? 1.8 : 1;
       ctx.stroke();
 
       if (isStars) {
         ctx.textAlign = "center";
-        ctx.font = `900 ${Math.round(25 * scale)}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.font = `900 ${Math.round(26 * scale)}px -apple-system, BlinkMacSystemFont, sans-serif`;
         ctx.fillStyle = "#fde047";
         ctx.fillText("★", ix, y + 54 * scale);
       } else {
         const cleanKey = String(slot.gift || slot.icon || "bear").replace(".png", "");
         const sp = sprites[cleanKey] || sprites.bear;
-        const sz = 52 * scale;
+        const sz = 54 * scale;
         if (sp && sp.complete && sp.naturalWidth > 0) {
-          ctx.drawImage(sp, ix - sz / 2, y + 18 * scale, sz, sz);
+          ctx.drawImage(sp, ix - sz / 2, y + 17 * scale, sz, sz);
         }
       }
 
@@ -163,9 +168,9 @@ function initDedicatedCasePage(caseId) {
   }
 
   function spinCurve(t) {
-    const split = 0.22;
-    const pIn = 2.0;
-    const pOut = 4.6;
+    const split = 0.20;
+    const pIn = 2.1;
+    const pOut = 5.0;
     const w1 = split / pIn;
     const w2 = (1 - split) / pOut;
     const sum = w1 + w2;
@@ -173,47 +178,72 @@ function initDedicatedCasePage(caseId) {
     return 1 - (w2 / sum) * Math.pow((1 - t) / (1 - split), pOut);
   }
 
+  function spawnIceShards(colorHex) {
+    const layer = document.getElementById("iceShardsLayer");
+    if (!layer) return;
+    layer.innerHTML = "";
+    for (let i = 0; i < 16; i++) {
+      const s = document.createElement("span");
+      s.className = "ice-shard-particle";
+      const angle = (Math.PI * 2 * i) / 16 + (Math.random() - 0.5) * 0.3;
+      const dist = 55 + Math.random() * 65;
+      s.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
+      s.style.setProperty("--dy", `${Math.sin(angle) * dist}px`);
+      s.style.setProperty("--rot", `${Math.round(Math.random() * 360)}deg`);
+      s.style.background = colorHex;
+      layer.appendChild(s);
+    }
+  }
+
   function animateThinIceBreak(drop) {
     return new Promise((resolve) => {
       const box = document.getElementById("iceSlabBox");
       const label = document.getElementById("iceSlabResultText");
       box.className = "ice-slab-box shaking";
-      label.textContent = "ПРОВЕРКА ЛЬДА...";
+      label.textContent = "ПРОВЕРКА ПРОЧНОСТИ...";
 
       const tickInterval = setInterval(() => {
         playTick();
         if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-      }, 220);
+      }, 190);
 
       setTimeout(() => {
-        box.classList.add("cracking");
-      }, 700);
+        box.classList.add("cracking-stage-1");
+      }, 650);
+
+      setTimeout(() => {
+        box.classList.add("cracking-stage-2");
+      }, 1350);
 
       setTimeout(() => {
         clearInterval(tickInterval);
         box.classList.remove("shaking");
         if (drop.drop_type === "nothing") {
           box.classList.add("broken-empty");
+          spawnIceShards("#f43f5e");
           label.textContent = "ЛЁД ТРЕСНУЛ — ПУСТО";
         } else if (Number(drop.stars_amount) >= Number(caseCfg.price || 50) * 2) {
           box.classList.add("broken-jackpot");
+          spawnIceShards("#fbbf24");
           label.textContent = `ПРОРЫВ: ${drop.label}!`;
         } else {
           box.classList.add("broken-small");
+          spawnIceShards("#38bdf8");
           label.textContent = `НА КРАЮ: +${drop.stars_amount} ★`;
         }
-        setTimeout(resolve, 650);
-      }, 2100);
+        setTimeout(resolve, 750);
+      }, 2200);
     });
   }
 
   function animateWheel(winObj) {
     return new Promise((resolve) => {
+      winGlowAlpha = 0;
       buildSlots(winObj);
       const start = 2 * STEP;
-      const target = WIN_SLOT * STEP + (Math.random() - 0.5) * 30;
-      const duration = fastSpin ? 1850 : 6000;
-      const settleDuration = fastSpin ? 150 : 340;
+      const target = WIN_SLOT * STEP + (Math.random() - 0.5) * 32;
+      const duration = fastSpin ? 1900 : 6200;
+      const settleDuration = fastSpin ? 180 : 420;
       const t0 = performance.now();
       lastTickSlot = Math.round(start / STEP);
 
@@ -239,7 +269,9 @@ function initDedicatedCasePage(caseId) {
           const st0 = performance.now();
           function settle(tNow) {
             const sp = Math.min((tNow - st0) / settleDuration, 1);
-            scrollX = s0 + (s1 - s0) * (1 - Math.pow(1 - sp, 3));
+            const easeOut = 1 - Math.pow(1 - sp, 3);
+            scrollX = s0 + (s1 - s0) * easeOut;
+            winGlowAlpha = easeOut;
             drawWheel();
             if (sp < 1) requestAnimationFrame(settle);
             else resolve();
@@ -339,9 +371,6 @@ function initDedicatedCasePage(caseId) {
     if (caseCfg.is_sold_out) {
       mainDisabled = true;
       mainLabel = "Кейс раскуплен";
-    } else if (caseCfg.is_locked) {
-      mainDisabled = true;
-      mainLabel = "Откроется 1 декабря в 00:00 МСК";
     } else if (caseCfg.is_daily) {
       const now = Math.floor(Date.now() / 1000);
       const readyAt = Number(appState.next_spin_at || 0);

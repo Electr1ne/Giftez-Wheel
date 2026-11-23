@@ -18,7 +18,7 @@
         <span class="pill-ice">UI SWITCH</span>
       </div>
       <div class="note-box">
-        <b>v2</b> — новый дизайн (игры, зимние категории, кейсы до 150 ★, «Тонкий лёд» и отсчёт до 1 декабря 00:00 МСК).
+        Новые зимние кейсы скрыты для игроков до <b>1 декабря 00:00 МСК</b>. В твоём виде <b>v2</b> они видны заранее для проверки.
       </div>
 
       <div class="list-row">
@@ -35,6 +35,28 @@
           <div class="row-sub">Публичная версия витрины</div>
         </div>
         <button type="button" class="btn-soft" id="btnUiPublicVer">v1</button>
+      </div>
+    </div>
+
+    <!-- Пополнение запаса лимитированных кейсов -->
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Пополнить запас кейсов</h2>
+        <span class="pill-ice">ЛИМИТКИ</span>
+      </div>
+      <div class="note-box" id="stockStatusBox">
+        Выбери лимитированный кейс и укажи, сколько открытий добавить в запас.
+      </div>
+      <select class="field-input" id="admStockCaseSelect">
+        <option value="snow_chest">Снежный сундук (20 ★)</option>
+        <option value="winter_safe">Зимний сейф (45 ★)</option>
+        <option value="winter_crown">Корона зимы (100 ★)</option>
+        <option value="ice_throne">Ледяной трон (150 ★)</option>
+        <option value="thin_ice">Тонкий лёд (50 ★)</option>
+      </select>
+      <div class="grid-2">
+        <input type="number" class="field-input" id="admStockAddAmount" min="1" value="25" placeholder="+ штук" />
+        <button type="button" class="btn-ice-sm" id="admRestockBtn">Пополнить запас</button>
       </div>
     </div>
 
@@ -118,6 +140,19 @@
     (function () {
       let appState = null;
 
+      function syncStockInfo() {
+        if (!appState || !Array.isArray(appState.cases)) return;
+        const sel = document.getElementById("admStockCaseSelect");
+        const box = document.getElementById("stockStatusBox");
+        const found = appState.cases.find((c) => c.id === sel.value);
+        if (found && typeof found.max_opens === "number") {
+          const rem = typeof found.remaining === "number" ? found.remaining : found.max_opens;
+          box.innerHTML = `Сейчас в наличии: <b>${rem} из ${found.max_opens} шт.</b>`;
+        } else {
+          box.textContent = "Выбери лимитированный кейс и укажи количество для пополнения.";
+        }
+      }
+
       function syncModeLabels() {
         if (!appState) return;
         const m = appState.system_modes || {
@@ -142,6 +177,7 @@
         btnU.textContent = m.update ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
         btnM.style.borderColor = m.maintenance ? "var(--ice-bright)" : "";
         btnU.style.borderColor = m.update ? "var(--ice-bright)" : "";
+        syncStockInfo();
       }
 
       async function adminPost(path, payload = {}) {
@@ -272,6 +308,21 @@
       appState = session.state;
       syncModeLabels();
       loadRequests();
+
+      document.getElementById("admStockCaseSelect").onchange = syncStockInfo;
+      const btnRestock = document.getElementById("admRestockBtn");
+      btnRestock.onclick = async () => {
+        const case_id = document.getElementById("admStockCaseSelect").value;
+        const add_amount = Math.max(1, Math.floor(Number(document.getElementById("admStockAddAmount").value || 0)));
+        btnRestock.disabled = true;
+        const d = await adminPost("/api/admin/restock_case", { case_id, add_amount });
+        btnRestock.disabled = false;
+        if (d) {
+          toast(d.message || "Запас кейса пополнен");
+          await session.syncFromServer();
+          syncStockInfo();
+        }
+      };
 
       const btnAdmV = document.getElementById("btnUiAdminVer");
       const btnPubV = document.getElementById("btnUiPublicVer");
