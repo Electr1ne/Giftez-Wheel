@@ -479,11 +479,12 @@ body.locked-body {
 }
 
 .game-tile-art {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   animation: floatTileIcon 3.2s ease-in-out infinite;
 }
 
@@ -493,9 +494,10 @@ body.locked-body {
 }
 
 .game-tile-art img {
-  width: 58px;
-  height: 58px;
+  width: 62px;
+  height: 62px;
   object-fit: contain;
+  border-radius: 14px;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
 }
 
