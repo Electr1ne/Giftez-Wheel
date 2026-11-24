@@ -886,7 +886,6 @@
           btnAction.disabled = cashingOut || currentMult <= 0.01;
           btnAction.className = "btn-main cashout-green-btn";
           btnAction.textContent = cashingOut
-            ? "Забираем..."
             : `Забрать (${livePayout} ★ · ${currentMult.toFixed(2)}x)`;
           return;
         }
@@ -1089,8 +1088,8 @@
          6. ГЛАВНЫЙ ЦИКЛ ОБЩЕГО РАУНДА
       ========================================================= */
       const WAIT_SEC = 5.0;
-      const CRASH_PAUSE_SEC = 3.6;
-      const SLOT_LEN = 26.0;
+      const CRASH_PAUSE_SEC = 3.0;
+      const SLOT_LEN = 24.0;
       let prevEpochIdx = -1;
 
       function tickSharedRound() {
