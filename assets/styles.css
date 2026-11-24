@@ -434,12 +434,13 @@ body.locked-body {
 .game-tile-card {
   position: relative;
   border-radius: 22px;
-  padding: 15px 12px 13px;
-  min-height: 152px;
+  padding: 14px 12px 13px;
+  min-height: clamp(168px, 44vw, 192px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   text-align: center;
   text-decoration: none;
   color: #fff;
@@ -473,19 +474,49 @@ body.locked-body {
   background: linear-gradient(135deg, #0284c7 0%, #1e3a8a 58%, #0f172a 100%);
 }
 
+.game-tile-card.tile-wide {
+  grid-column: 1 / -1;
+  min-height: clamp(118px, 31vw, 134px);
+  flex-direction: row;
+  padding: 14px 16px;
+  text-align: left;
+  gap: 12px;
+}
+
+.game-tile-wide-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.game-tile-wide-sub {
+  font-size: 11.5px;
+  color: #e0f2fe;
+  opacity: 0.85;
+  line-height: 1.35;
+}
+
 .game-tile-card.is-locked {
   opacity: 0.78;
   filter: saturate(0.7);
 }
 
 .game-tile-art {
-  width: 68px;
-  height: 68px;
+  width: clamp(86px, 24vw, 108px);
+  height: clamp(86px, 24vw, 108px);
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   animation: floatTileIcon 3.2s ease-in-out infinite;
+}
+
+.game-tile-card.tile-wide .game-tile-art {
+  width: clamp(82px, 22vw, 102px);
+  height: clamp(82px, 22vw, 102px);
 }
 
 @keyframes floatTileIcon {
@@ -494,11 +525,13 @@ body.locked-body {
 }
 
 .game-tile-art img {
-  width: 62px;
-  height: 62px;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
-  border-radius: 14px;
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
+  border-radius: 16px;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.48));
 }
 
 .game-tile-pill {
@@ -547,7 +580,7 @@ body.locked-body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-radius: 14px;
   background: rgba(7, 10, 18, 0.4);
   border: 1px solid rgba(165, 180, 252, 0.28);
@@ -555,6 +588,13 @@ body.locked-body {
   font-weight: 800;
   color: #fde047;
   flex-shrink: 0;
+}
+
+.banner-mode-icon {
+  width: clamp(26px, 7vw, 32px);
+  height: clamp(26px, 7vw, 32px);
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 /* Вкладки зимних категорий кейсов */

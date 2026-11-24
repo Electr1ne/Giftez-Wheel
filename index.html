@@ -203,7 +203,7 @@
                 <p>Классические зимние кейсы с перекрутом дропа</p>
               </div>
               <div class="upgrade-badge-box">
-                <img src="./cases_mode.png" onerror="this.onerror=null;this.src='./newyear.png';" style="width:22px;height:22px;object-fit:contain;" alt="" />
+                <img src="./cases_mode.png" onerror="this.onerror=null;this.src='./newyear.png';" class="banner-mode-icon" alt="" />
                 <span>${paidCasesCount} шт.</span>
               </div>
             </a>
@@ -219,7 +219,7 @@
                   <line x1="5" y1="12" x2="19" y2="12"/>
                   <polyline points="12 5 19 12 12 19"/>
                 </svg>
-                <img src="./upgrader_mode.png" onerror="this.onerror=null;this.src='./ring.png';" style="width:22px;height:22px;object-fit:contain;" alt="" />
+                <img src="./upgrader_mode.png" onerror="this.onerror=null;this.src='./ring.png';" class="banner-mode-icon" alt="" />
               </div>
             </a>
           `;
@@ -254,16 +254,16 @@
               <div class="game-tile-title">Апгрейдер</div>
             </a>
 
-            <a class="game-tile-card tile-avalanche ${avalancheUnlocked ? "" : "is-locked"}" style="grid-column:1/-1;min-height:110px;flex-direction:row;padding:14px 18px;text-align:left;" href="${avalancheUnlocked ? "avalanche.html" : "#"}">
-              <div style="display:flex;flex-direction:column;gap:5px;">
+            <a class="game-tile-card tile-avalanche tile-wide ${avalancheUnlocked ? "" : "is-locked"}" href="${avalancheUnlocked ? "avalanche.html" : "#"}">
+              <div class="game-tile-wide-info">
                 <div class="game-tile-pill" style="align-self:flex-start;" id="avalancheTileBadge">
                   ${avalancheUnlocked ? "НОВЫЙ РЕЖИМ · ДО x25" : `ОТКРОЕТСЯ 1 ДЕК · ${formatCountdown(startTs - now)}`}
                 </div>
                 <div class="game-tile-title" style="font-size:17px;">Лавина</div>
-                <div style="font-size:11.5px;color:#e0f2fe;opacity:0.85;">Жми «Забрать» вручную или настрой авто-выход до схода</div>
+                <div class="game-tile-wide-sub">Жми «Забрать» вручную или настрой авто-выход до схода</div>
               </div>
-              <div class="game-tile-art" style="width:64px;height:64px;">
-                <img src="./avalanche.png" onerror="this.src=getFallbackSrc('rocket')" style="width:54px;height:54px;" alt="Лавина" />
+              <div class="game-tile-art">
+                <img src="./avalanche.png" onerror="this.src=getFallbackSrc('rocket')" alt="Лавина" />
               </div>
             </a>
           </div>
