@@ -14,6 +14,7 @@
       gap: 6px;
       overflow-x: auto;
       padding: 2px 1px;
+      min-height: 28px;
       scrollbar-width: none;
     }
     .av-history-bar::-webkit-scrollbar {
@@ -54,10 +55,10 @@
     /* Главная арена Лавины */
     .avalanche-arena {
       position: relative;
-      height: 248px;
+      height: 256px;
       border-radius: 22px;
       background:
-        radial-gradient(circle at 50% 18%, rgba(56, 189, 248, 0.25) 0%, transparent 62%),
+        radial-gradient(circle at 50% 18%, rgba(56, 189, 248, 0.22) 0%, transparent 64%),
         linear-gradient(180deg, #0b162c 0%, #070c18 100%);
       border: 1px solid var(--border-strong);
       overflow: hidden;
@@ -67,7 +68,7 @@
       justify-content: center;
       text-align: center;
       padding: 16px;
-      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      transition: border-color 0.45s ease, box-shadow 0.45s ease;
     }
     .avalanche-arena.waiting {
       border-color: rgba(125, 211, 252, 0.42);
@@ -80,16 +81,16 @@
     .avalanche-arena.danger {
       border-color: rgba(251, 191, 36, 0.72);
       box-shadow: inset 0 0 48px rgba(251, 191, 36, 0.24);
-      animation: avDangerPulse 0.36s infinite alternate;
+      animation: avDangerPulse 0.65s ease-in-out infinite alternate;
     }
     @keyframes avDangerPulse {
       from { transform: scale(1); }
-      to { transform: scale(1.01); }
+      to { transform: scale(1.008); }
     }
     .avalanche-arena.crashed {
       border-color: rgba(244, 63, 94, 0.85);
-      box-shadow: inset 0 0 54px rgba(244, 63, 94, 0.42);
-      animation: avCrashShake 0.34s ease;
+      box-shadow: inset 0 0 54px rgba(244, 63, 94, 0.38);
+      animation: avCrashShake 0.48s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .avalanche-arena.won {
       border-color: rgba(52, 211, 153, 0.85);
@@ -97,13 +98,13 @@
     }
     @keyframes avCrashShake {
       0%, 100% { transform: translate(0, 0); }
-      20% { transform: translate(-5px, 5px); }
-      40% { transform: translate(5px, -4px); }
-      60% { transform: translate(-4px, 4px); }
-      80% { transform: translate(4px, -2px); }
+      18% { transform: translate(-5px, 6px); }
+      36% { transform: translate(5px, -4px); }
+      54% { transform: translate(-4px, 4px); }
+      72% { transform: translate(4px, -2px); }
     }
 
-    /* Canvas восходящего снега и гор */
+    /* Canvas восходящего снега и обвала */
     #avSnowLiftCanvas {
       position: absolute;
       inset: 0;
@@ -113,7 +114,7 @@
       z-index: 1;
     }
 
-    /* Волна снежного подъёма */
+    /* Волна снежного подъёма во время полёта */
     .avalanche-wave {
       position: absolute;
       left: 0;
@@ -123,12 +124,53 @@
       background: linear-gradient(0deg, rgba(56, 189, 248, 0.22) 0%, rgba(125, 211, 252, 0.06) 45%, transparent 100%);
       pointer-events: none;
       transform: translateY(100%);
-      transition: transform 0.22s linear;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
       z-index: 1;
     }
-    .avalanche-arena.crashed .avalanche-wave {
-      transform: translateY(0%) !important;
-      background: linear-gradient(180deg, rgba(244, 63, 94, 0.42) 0%, rgba(244, 63, 94, 0.14) 65%, transparent 100%);
+
+    /* Поток обвалившегося сверху снега при сходе лавины */
+    .av-snow-collapse {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transform: translateY(-100%);
+      background: linear-gradient(
+        180deg,
+        rgba(241, 245, 249, 0.78) 0%,
+        rgba(224, 242, 254, 0.45) 38%,
+        rgba(186, 230, 253, 0.14) 75%,
+        transparent 100%
+      );
+      transition: transform 0.52s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+    }
+    .avalanche-arena.crashed .av-snow-collapse {
+      opacity: 1;
+      transform: translateY(0%);
+    }
+
+    /* Пышные сугробы снизу после схода лавины */
+    .av-snowdrifts {
+      position: absolute;
+      left: -6%;
+      right: -6%;
+      bottom: -8px;
+      height: 92px;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transform: translateY(100%) scaleY(0.82);
+      transition: transform 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.06s, opacity 0.38s ease;
+    }
+    .avalanche-arena.crashed .av-snowdrifts {
+      opacity: 1;
+      transform: translateY(0%) scaleY(1);
+    }
+    .av-snowdrifts svg {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     /* Верхний бейдж статуса внутри арены */
@@ -136,14 +178,14 @@
       position: absolute;
       top: 11px;
       left: 12px;
-      z-index: 3;
+      z-index: 4;
       display: inline-flex;
       align-items: center;
       gap: 6px;
       padding: 4px 10px;
       border-radius: 99px;
-      background: rgba(7, 10, 18, 0.65);
-      border: 1px solid rgba(148, 197, 255, 0.24);
+      background: rgba(7, 10, 18, 0.72);
+      border: 1px solid rgba(148, 197, 255, 0.28);
       font-size: 10.5px;
       font-weight: 800;
       color: #e0f2fe;
@@ -154,49 +196,51 @@
       border-radius: 50%;
       background: #38bdf8;
       box-shadow: 0 0 8px #38bdf8;
-      animation: avDotBlink 1s infinite alternate;
+      animation: avDotBlink 1.2s ease-in-out infinite alternate;
     }
     .avalanche-arena.crashed .av-live-dot {
       background: #f43f5e;
       box-shadow: 0 0 8px #f43f5e;
     }
     @keyframes avDotBlink {
-      from { opacity: 0.45; }
+      from { opacity: 0.4; }
       to { opacity: 1; }
     }
 
     /* Центральный множитель / отсчёт */
     .avalanche-mult {
       position: relative;
-      z-index: 3;
+      z-index: 4;
       font-size: 54px;
       font-weight: 900;
       letter-spacing: -1.4px;
+      font-variant-numeric: tabular-nums;
       background: linear-gradient(180deg, #ffffff 0%, #7dd3fc 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       line-height: 1.02;
-      transition: transform 0.12s ease;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .avalanche-arena.waiting .avalanche-mult {
       font-size: 58px;
       background: linear-gradient(180deg, #ffffff 0%, #bae6fd 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      animation: avCountPop 0.95s ease infinite;
+      animation: avCountPop 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
     }
     @keyframes avCountPop {
-      0% { transform: scale(1.12); opacity: 0.85; }
-      40% { transform: scale(1); opacity: 1; }
-      100% { transform: scale(0.96); opacity: 0.92; }
+      0% { transform: scale(1.08); opacity: 0.85; }
+      45% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.97); opacity: 0.94; }
     }
     .avalanche-arena.running .avalanche-mult {
-      transform: scale(1.03);
+      transform: scale(1.02);
     }
     .avalanche-arena.crashed .avalanche-mult {
       background: linear-gradient(180deg, #fda4af 0%, #f43f5e 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 12px rgba(7, 10, 18, 0.85));
     }
     .avalanche-arena.won .avalanche-mult {
       background: linear-gradient(180deg, #a7f3d0 0%, #34d399 100%);
@@ -206,12 +250,13 @@
 
     .avalanche-status {
       position: relative;
-      z-index: 3;
+      z-index: 4;
       font-size: 12px;
-      font-weight: 700;
-      color: #cbd5e1;
+      font-weight: 800;
+      color: #e2e8f0;
       margin-top: 8px;
       max-width: 90%;
+      text-shadow: 0 2px 10px rgba(7, 10, 18, 0.85);
     }
 
     /* Полоса прогресса отсчёта 5..1 */
@@ -222,23 +267,25 @@
       right: 0;
       height: 4px;
       background: rgba(255, 255, 255, 0.08);
-      z-index: 3;
+      z-index: 4;
     }
     .av-countdown-fill {
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, #38bdf8, #818cf8);
-      transition: width 0.1s linear;
     }
 
-    /* Кнопка ставки в очередь на следующий раунд */
-    .btn-main.queued-btn {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      box-shadow: 0 8px 22px rgba(124, 58, 237, 0.34);
-    }
     .btn-main.cashout-green-btn {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       box-shadow: 0 8px 22px rgba(16, 185, 129, 0.36);
+    }
+
+    .field-input:disabled,
+    .btn-soft:disabled,
+    .auto-switch-btn:disabled {
+      opacity: 0.52;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     .auto-toggle-row {
@@ -267,7 +314,7 @@
       color: var(--ice-bright);
     }
 
-    /* Список игроков раунда */
+    /* Список реальных игроков раунда */
     .av-players-list {
       display: flex;
       flex-direction: column;
@@ -284,7 +331,7 @@
       border-radius: 13px;
       background: var(--panel-2);
       border: 1px solid var(--border);
-      transition: border-color 0.2s ease, background 0.2s ease;
+      transition: border-color 0.25s ease, background 0.25s ease;
     }
     .av-player-row.is-me {
       border-color: rgba(125, 211, 252, 0.45);
@@ -374,13 +421,26 @@
       <span class="pill-ice">ИГРА «ЛАВИНА»</span>
     </div>
 
-    <!-- Прошлые иксы -->
+    <!-- Прошлые иксы реальных раундов -->
     <div class="av-history-bar fade-in" id="avHistoryBar"></div>
 
     <div class="section-card fade-in">
       <div class="avalanche-arena waiting" id="avalancheArena">
         <canvas id="avSnowLiftCanvas"></canvas>
         <div class="avalanche-wave" id="avWave"></div>
+        <div class="av-snow-collapse" id="avSnowCollapse"></div>
+
+        <!-- Пышные многослойные сугробы при обвале лавины -->
+        <div class="av-snowdrifts" id="avSnowdrifts">
+          <svg viewBox="0 0 440 96" preserveAspectRatio="none" fill="none">
+            <!-- Дальний слой сугробов -->
+            <path d="M-10 96 L-10 46 Q45 14 115 36 Q185 56 255 24 Q335 -6 450 38 L450 96 Z" fill="rgba(186, 230, 253, 0.72)"/>
+            <!-- Средний слой сугробов -->
+            <path d="M-10 96 L-10 56 Q65 26 145 50 Q225 70 305 34 Q380 12 450 52 L450 96 Z" fill="rgba(224, 242, 254, 0.88)"/>
+            <!-- Передний плотный сугроб -->
+            <path d="M-10 96 L-10 66 Q50 40 125 62 Q205 82 285 48 Q365 24 450 64 L450 96 Z" fill="#f8fafc"/>
+          </svg>
+        </div>
 
         <div class="av-stage-pill" id="avStagePill">
           <span class="av-live-dot"></span>
@@ -426,13 +486,15 @@
       <button type="button" class="btn-main" id="btnAvalancheAction">Поставить 10 ★</button>
     </div>
 
-    <!-- Список игроков текущего раунда -->
+    <!-- Список реальных игроков текущего раунда -->
     <div class="section-card fade-in">
       <div class="card-head">
         <h2>Игроки в раунде</h2>
-        <span class="pill-ice" id="avPlayersCountBadge">0 игроков</span>
+        <span class="pill-ice" id="avPlayersCountBadge">0 игр.</span>
       </div>
-      <div class="av-players-list" id="avPlayersList"></div>
+      <div class="av-players-list" id="avPlayersList">
+        <div class="empty-box" style="padding:14px;">В текущем раунде пока нет ставок</div>
+      </div>
     </div>
   </div>
 
@@ -467,68 +529,54 @@
       const targetInput = document.getElementById("avTargetInput");
 
       let autoCashEnabled = false;
-      let autoTarget = 1.5;
 
-      // Состояние ставок текущего пользователя
-      // currentBet: { bet, status: 'playing' | 'won' | 'lost', cashoutMult, payout, roundId }
+      // Ставка игрока в активном раунде
       let currentBet = null;
-      // queuedBet: { bet, autoEnabled, autoMult } — ставка на СЛЕДУЮЩИЙ раунд
+      // Ставка игрока в очереди на СЛЕДУЮЩИЙ раунд
       let queuedBet = null;
+      let isPlacingBet = false;
       let cashingOut = false;
 
-      // Общее состояние синхронизированного раунда
+      // Состояние общего раунда
       let roundPhase = "waiting"; // 'waiting' | 'running' | 'crashed'
       let activeRoundId = "";
       let currentMult = 0.0;
       let crashMult = 1.0;
       let lastCountdownNum = null;
       let lastTickBucket = -1;
-      let historyMults = [1.84, 0.00, 4.12, 1.29, 0.45, 7.60, 2.15, 0.00, 3.08, 1.62];
-      let roundPlayers = [];
+
+      // Только реальные данные с сервера (без ботов)
+      let serverAvalancheData = null;
+      let historyMults = [];
+      let realRoundPlayers = [];
 
       const myUser = tg?.initDataUnsafe?.user;
-      const myName = myUser?.username ? `@${myUser.username}` : (myUser?.first_name || "Вы");
+      const myUserId = Number(myUser?.id || 0);
+      const myName = myUser?.username ? `@${myUser.username}` : (myUser?.first_name || "Игрок");
 
       /* =========================================================
-         1. ПЛАВНАЯ КРИВАЯ РАЗГОНА ОТ 0.00x
-         - 0.00x .. 3.00x: очень медленный и плавный разгон
-         - 3.00x .. 7.00x: чуть быстрее
-         - 7.00x .. 15.00x: умеренно быстрее
-         - > 15.00x: динамичный рост
+         1. ПЛАВНЫЙ ПРОГРЕССИВНЫЙ РАЗГОН ОТ 0.00x (КАК В АПГРЕЙДЕРЕ)
+         Гладкая полиномиальная кривая: старт от 0.00x очень медленный,
+         и каждые 0.10–0.20x скорость прироста плавно увеличивается
       ========================================================= */
       function computeMultiplierAtElapsed(sec) {
         if (sec <= 0) return 0.0;
-        // Фаза 1: 0.00x -> 3.00x за 15 секунд (очень плавно: ~0.12x -> 0.28x/сек)
-        if (sec <= 15.0) {
-          const t = sec / 15.0;
-          const val = 3.0 * (0.62 * t + 0.38 * t * t);
-          return Number(val.toFixed(2));
-        }
-        // Фаза 2: 3.00x -> 7.00x за следующие 10 секунд (~0.40x/сек)
-        const s2 = sec - 15.0;
-        if (s2 <= 10.0) {
-          const t = s2 / 10.0;
-          const val = 3.0 + 4.0 * (0.78 * t + 0.22 * t * t);
-          return Number(val.toFixed(2));
-        }
-        // Фаза 3: 7.00x -> 15.00x за следующие 11 секунд (~0.72x/сек)
-        const s3 = s2 - 10.0;
-        if (s3 <= 11.0) {
-          const t = s3 / 11.0;
-          const val = 7.0 + 8.0 * (0.8 * t + 0.2 * t * t);
-          return Number(val.toFixed(2));
-        }
-        // Фаза 4: свыше 15.00x
-        const s4 = s3 - 11.0;
-        const val = 15.0 + s4 * 1.15 + Math.pow(s4, 1.35) * 0.2;
+        // Гладкий кубический полином без скачков и ступенек:
+        // t = 0..5s  -> 0.00x .. 0.35x (очень медленно)
+        // t = 10s    -> 0.96x
+        // t = 15s    -> 1.92x
+        // t = 20s    -> 3.34x
+        // t = 25s    -> 5.34x
+        // t = 30s    -> 8.04x
+        const val = 0.048 * sec + 0.0038 * sec * sec + 0.00012 * sec * sec * sec;
         return Number(Math.min(100, val).toFixed(2));
       }
 
       function computeDurationForCrash(targetCrash) {
-        if (targetCrash <= 0.0) return 0.35; // Краш на 0.00x
+        if (targetCrash <= 0.0) return 0.45; // Мгновенный краш на 0.00x
         let lo = 0;
-        let hi = 90;
-        for (let i = 0; i < 28; i++) {
+        let hi = 120;
+        for (let i = 0; i < 36; i++) {
           const mid = (lo + hi) * 0.5;
           if (computeMultiplierAtElapsed(mid) < targetCrash) lo = mid;
           else hi = mid;
@@ -537,73 +585,64 @@
       }
 
       /* =========================================================
-         2. ДЕТЕРМИНИРОВАННЫЙ ОБЩИЙ ЦИКЛ РАУНДОВ ДЛЯ ВСЕХ ИГРОКОВ
-         (если сервер ещё не отдаёт /api/avalanche_state)
+         2. СИНХРОНИЗАЦИЯ РЕАЛЬНОГО СОСТОЯНИЯ РАУНДА И ИГРОКОВ С СЕРВЕРОМ
       ========================================================= */
       function seededRand(seed) {
-        let x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+        const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
         return x - Math.floor(x);
       }
 
-      function generateCrashForSeed(seed) {
+      function computeFallbackCrash(seed) {
         const r = seededRand(seed);
-        // ~10% шанс краша на 0.00x
+        // Шанс краша на 0.00x (~10%)
         if (r < 0.10) return 0.00;
-        // ~24% шанс раннего схода до 1.25x
-        if (r < 0.34) return Number((0.15 + seededRand(seed + 1) * 1.10).toFixed(2));
-        // ~38% шанс среднего раунда 1.25x .. 3.20x
-        if (r < 0.72) return Number((1.25 + seededRand(seed + 2) * 1.95).toFixed(2));
-        // ~20% шанс 3.20x .. 8.50x
-        if (r < 0.92) return Number((3.20 + seededRand(seed + 3) * 5.30).toFixed(2));
-        // ~8% шанс высокого икса 8.50x .. 22.00x
-        return Number((8.50 + seededRand(seed + 4) * 13.50).toFixed(2));
+        if (r < 0.36) return Number((0.15 + seededRand(seed + 1) * 1.10).toFixed(2));
+        if (r < 0.74) return Number((1.25 + seededRand(seed + 2) * 1.85).toFixed(2));
+        if (r < 0.93) return Number((3.10 + seededRand(seed + 3) * 4.90).toFixed(2));
+        return Number((8.00 + seededRand(seed + 4) * 14.00).toFixed(2));
       }
 
-      const BOT_NICKS = [
-        "@snow_fox", "@ice_king", "@moroz_77", "@vanya_star", "@lednik",
-        "@nord_wolf", "@kate_winter", "@dima_pro", "@sneg_ovik", "@elena_vip",
-        "@frost_byte", "@lucky_bear", "@alex_top", "@alina_ice"
-      ];
-
-      function buildSimulatedPlayers(seed, roundCrash) {
-        const count = 4 + Math.floor(seededRand(seed + 10) * 5); // 4..8 игроков
-        const list = [];
-        for (let i = 0; i < count; i++) {
-          const nick = BOT_NICKS[(seed + i * 3) % BOT_NICKS.length];
-          const betChoices = [5, 10, 15, 20, 25, 35, 50, 75, 100];
-          const bet = betChoices[Math.floor(seededRand(seed + 20 + i) * betChoices.length)];
-          const wantTarget = Number((1.15 + seededRand(seed + 40 + i) * 3.4).toFixed(2));
-          const willWin = roundCrash > 0 && roundCrash >= wantTarget;
-          list.push({
-            id: `bot_${seed}_${i}`,
-            name: nick,
-            bet,
-            targetMult: wantTarget,
-            willWin,
-            status: "playing",
-            cashoutMult: 0,
-            payout: 0,
-            isMe: false
+      async function pollRealAvalancheState() {
+        if (!tg?.initData) return;
+        try {
+          const r = await fetch(apiUrl("/api/avalanche_state"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData: tg.initData })
           });
-        }
-        return list;
+          if (!r.ok) return;
+          const d = await r.json();
+          if (!d || !d.ok) return;
+
+          serverAvalancheData = d;
+          if (Array.isArray(d.history)) {
+            historyMults = d.history.map((x) => Number(x || 0));
+            renderHistoryBar();
+          }
+          if (Array.isArray(d.players)) {
+            realRoundPlayers = d.players.map((p) => ({
+              userId: Number(p.user_id || 0),
+              name: p.username ? `@${String(p.username).replace(/^@+/, "")}` : (p.name || "Игрок"),
+              bet: Number(p.bet_stars || p.bet || 0),
+              status: p.status || "playing",
+              cashoutMult: Number(p.cashout_mult || 0),
+              payout: Number(p.payout || 0)
+            }));
+            renderPlayersList();
+          }
+        } catch (_) {}
       }
 
-      function buildInitialHistory(currentEpochIdx) {
-        const arr = [];
-        for (let k = 1; k <= 10; k++) {
-          arr.push(generateCrashForSeed(currentEpochIdx - k));
-        }
-        return arr;
-      }
+      pollRealAvalancheState();
+      setInterval(pollRealAvalancheState, 1500);
 
       /* =========================================================
-         3. АНИМАЦИЯ ВОСХОДЯЩЕГО СНЕЖНОГО ПОТОКА (CANVAS)
+         3. АНИМАЦИЯ СНЕГА: ПОДЪЁМ В РАУНДЕ И ОБВАЛ КОМЬЕВ ПРИ КРАШЕ
       ========================================================= */
       const liftCanvas = document.getElementById("avSnowLiftCanvas");
       const liftCtx = liftCanvas.getContext("2d");
       let liftW = 360;
-      let liftH = 248;
+      let liftH = 256;
 
       function resizeLiftCanvas() {
         const rect = arena.getBoundingClientRect();
@@ -613,71 +652,102 @@
       resizeLiftCanvas();
       window.addEventListener("resize", resizeLiftCanvas);
 
-      const snowParticles = Array.from({ length: 48 }, () => ({
+      const snowParticles = Array.from({ length: 64 }, () => ({
         x: Math.random() * 420,
         y: Math.random() * 260,
-        r: 1.2 + Math.random() * 2.8,
-        speed: 0.6 + Math.random() * 1.4,
-        drift: -0.4 + Math.random() * 0.8,
-        alpha: 0.25 + Math.random() * 0.55
+        r: 1.1 + Math.random() * 2.6,
+        speed: 0.45 + Math.random() * 1.15,
+        phase: Math.random() * Math.PI * 2,
+        swayAmp: 6 + Math.random() * 14,
+        alpha: 0.22 + Math.random() * 0.55
       }));
 
+      // Крупные комья снега, падающие сверху при обвале лавины
+      let crashClumps = [];
+      function spawnSnowCollapseClumps() {
+        crashClumps = Array.from({ length: 34 }, () => ({
+          x: Math.random() * liftW,
+          y: -15 - Math.random() * 90,
+          r: 4 + Math.random() * 9,
+          vy: 180 + Math.random() * 240,
+          vx: -25 + Math.random() * 50,
+          alpha: 0.65 + Math.random() * 0.35
+        }));
+      }
+
+      let smoothLiftFactor = 0.25;
       let lastFrameTs = performance.now();
+
       function renderSnowLift(now) {
         const dt = Math.min(0.05, (now - lastFrameTs) / 1000);
         lastFrameTs = now;
 
         liftCtx.clearRect(0, 0, liftW, liftH);
 
-        // Скорость подъёма зависит от фазы и текущего икса
-        let liftMultiplier = 0.35;
+        // Плавная интерполяция скорости подъёма
+        let targetLift = 0.25;
         if (roundPhase === "running") {
-          liftMultiplier = 1.4 + Math.min(8.5, currentMult * 0.65);
+          targetLift = 0.75 + Math.min(5.5, currentMult * 0.45);
         } else if (roundPhase === "crashed") {
-          liftMultiplier = -2.8; // При краше снег обрушивается вниз
+          targetLift = -2.2;
         }
+        smoothLiftFactor += (targetLift - smoothLiftFactor) * Math.min(1, dt * 3.0);
 
-        // Лёгкий световой столб подъёма в центре при раунде
+        // Северное сияние подъёма во время активного полёта
         if (roundPhase === "running") {
-          const beamAlpha = Math.min(0.24, 0.06 + currentMult * 0.015);
+          const beamAlpha = Math.min(0.22, 0.04 + currentMult * 0.012);
           const grad = liftCtx.createLinearGradient(0, liftH, 0, 0);
           grad.addColorStop(0, `rgba(56, 189, 248, ${beamAlpha})`);
-          grad.addColorStop(0.65, `rgba(129, 140, 248, ${beamAlpha * 0.5})`);
+          grad.addColorStop(0.55, `rgba(129, 140, 248, ${beamAlpha * 0.45})`);
           grad.addColorStop(1, "rgba(56, 189, 248, 0)");
           liftCtx.fillStyle = grad;
           liftCtx.fillRect(0, 0, liftW, liftH);
         }
 
-        // Частицы снега, летящие вверх (подъём)
+        const timeSec = now / 1000;
         for (const p of snowParticles) {
-          p.y -= p.speed * 58 * liftMultiplier * dt;
-          p.x += p.drift * 22 * dt;
+          p.y -= p.speed * 42 * smoothLiftFactor * dt;
+          p.x += Math.sin(timeSec * 1.3 + p.phase) * p.swayAmp * dt;
 
-          if (p.y < -8) {
-            p.y = liftH + 6;
+          if (p.y < -10) {
+            p.y = liftH + 8;
             p.x = Math.random() * liftW;
-          } else if (p.y > liftH + 8) {
-            p.y = -6;
+          } else if (p.y > liftH + 10) {
+            p.y = -8;
             p.x = Math.random() * liftW;
           }
           if (p.x < 0) p.x = liftW;
           if (p.x > liftW) p.x = 0;
 
           liftCtx.beginPath();
-          if (roundPhase === "running" && currentMult >= 1.8) {
-            // Вытянутые снежные шлейфы при разгоне
-            const streakLen = Math.min(18, 4 + currentMult * 1.4);
-            liftCtx.strokeStyle = `rgba(224, 242, 254, ${p.alpha})`;
-            liftCtx.lineWidth = p.r * 0.85;
+          if (roundPhase === "running" && smoothLiftFactor > 1.25) {
+            const tail = Math.min(15, (smoothLiftFactor - 1.0) * 3.2);
+            liftCtx.strokeStyle = `rgba(224, 242, 254, ${p.alpha * 0.85})`;
+            liftCtx.lineWidth = p.r * 0.8;
             liftCtx.lineCap = "round";
             liftCtx.moveTo(p.x, p.y);
-            liftCtx.lineTo(p.x - p.drift * 2, p.y + streakLen);
+            liftCtx.lineTo(p.x, p.y + tail);
             liftCtx.stroke();
           } else {
-            liftCtx.fillStyle = roundPhase === "crashed"
-              ? `rgba(253, 164, 175, ${p.alpha})`
-              : `rgba(224, 242, 254, ${p.alpha})`;
+            liftCtx.fillStyle = `rgba(224, 242, 254, ${p.alpha})`;
             liftCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            liftCtx.fill();
+          }
+        }
+
+        // Отрисовка обваливающихся снежных комьев в сугробы при краше
+        if (roundPhase === "crashed" && crashClumps.length > 0) {
+          for (const c of crashClumps) {
+            c.y += c.vy * dt;
+            c.x += c.vx * dt;
+            if (c.y > liftH - 18) {
+              c.y = liftH - 18;
+              c.vy = 0;
+              c.vx = 0;
+            }
+            liftCtx.beginPath();
+            liftCtx.fillStyle = `rgba(248, 250, 252, ${c.alpha})`;
+            liftCtx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
             liftCtx.fill();
           }
         }
@@ -687,11 +757,15 @@
       requestAnimationFrame(renderSnowLift);
 
       /* =========================================================
-         4. ОТРИСОВКА ИСТОРИИ И СПИСКА ИГРОКОВ
+         4. ОТРИСОВКА ИСТОРИИ И СПИСКА ТОЛЬКО РЕАЛЬНЫХ ИГРОКОВ
       ========================================================= */
       function renderHistoryBar() {
+        if (!historyMults.length) {
+          historyBar.innerHTML = `<span class="av-hist-chip low">История раундов появится после старта</span>`;
+          return;
+        }
         historyBar.innerHTML = historyMults
-          .slice(0, 12)
+          .slice(0, 14)
           .map((m) => {
             const val = Number(m || 0);
             let cls = "low";
@@ -704,10 +778,12 @@
       }
 
       function renderPlayersList() {
-        const merged = [];
-        if (currentBet && currentBet.roundId === activeRoundId) {
-          merged.push({
-            id: "me_active",
+        const list = [];
+
+        const meOnServer = realRoundPlayers.some((p) => myUserId > 0 && p.userId === myUserId);
+        if (currentBet && currentBet.roundId === activeRoundId && !meOnServer) {
+          list.push({
+            userId: myUserId,
             name: `${myName} (Вы)`,
             bet: currentBet.bet,
             status: currentBet.status,
@@ -716,18 +792,36 @@
             isMe: true
           });
         }
-        for (const p of roundPlayers) {
-          merged.push(p);
+
+        for (const p of realRoundPlayers) {
+          const isMe = myUserId > 0 && p.userId === myUserId;
+          if (isMe && currentBet && currentBet.roundId === activeRoundId) {
+            list.push({
+              userId: p.userId,
+              name: `${p.name} (Вы)`,
+              bet: currentBet.bet,
+              status: currentBet.status,
+              cashoutMult: currentBet.cashoutMult,
+              payout: currentBet.payout,
+              isMe: true
+            });
+          } else {
+            list.push({
+              ...p,
+              name: isMe ? `${p.name} (Вы)` : p.name,
+              isMe
+            });
+          }
         }
 
-        playersCountEl.textContent = `${merged.length} игр.`;
+        playersCountEl.textContent = `${list.length} игр.`;
 
-        if (!merged.length) {
-          playersListEl.innerHTML = `<div class="empty-box" style="padding:14px;">Ожидаем ставки игроков на раунд...</div>`;
+        if (!list.length) {
+          playersListEl.innerHTML = `<div class="empty-box" style="padding:14px;">В этом раунде никто не поставил — раунд идёт без ставок</div>`;
           return;
         }
 
-        playersListEl.innerHTML = merged
+        playersListEl.innerHTML = list
           .map((p) => {
             let rowCls = p.isMe ? "is-me" : "";
             let rightHtml = `<span class="av-badge-playing">В игре</span>`;
@@ -759,13 +853,37 @@
       }
 
       /* =========================================================
-         5. УПРАВЛЕНИЕ КНОПКОЙ СТАВКИ / ОЧЕРЕДИ / ВЫВОДА
+         5. БЛОКИРОВКА СТАВКИ И КНОПКА «Ожидание раунда»
       ========================================================= */
-      function syncActionButton() {
-        const inputBet = Math.max(1, Math.floor(Number(betInput.value || 10)));
+      function setControlsLocked(locked) {
+        betInput.disabled = locked;
+        targetInput.disabled = locked;
+        btnAutoToggle.disabled = locked;
+        document.querySelectorAll("[data-av-bet]").forEach((b) => {
+          b.disabled = locked;
+        });
+        document.querySelectorAll("[data-av-mult]").forEach((b) => {
+          b.disabled = locked;
+        });
+      }
 
-        // 1. Игрок участвует в ТЕКУЩЕМ активном раунде и ещё не забрал
-        if (roundPhase === "running" && currentBet && currentBet.roundId === activeRoundId && currentBet.status === "playing") {
+      function syncControlsAndButton() {
+        const inputBet = Math.max(1, Math.floor(Number(betInput.value || 10)));
+        const hasActiveBetInCurrentRound = Boolean(currentBet && currentBet.roundId === activeRoundId);
+        const isPlayingNow = hasActiveBetInCurrentRound && currentBet.status === "playing";
+        const hasQueuedNext = Boolean(queuedBet);
+
+        const lockInputs = isPlacingBet || hasQueuedNext || (hasActiveBetInCurrentRound && (roundPhase === "waiting" || isPlayingNow));
+        setControlsLocked(lockInputs);
+
+        if (isPlacingBet) {
+          btnAction.disabled = true;
+          btnAction.className = "btn-main";
+          btnAction.textContent = "Ожидание раунда";
+          return;
+        }
+
+        if (roundPhase === "running" && isPlayingNow) {
           const livePayout = Math.floor(currentBet.bet * currentMult);
           btnAction.disabled = cashingOut || currentMult <= 0.01;
           btnAction.className = "btn-main cashout-green-btn";
@@ -775,35 +893,27 @@
           return;
         }
 
-        // 2. Идёт ожидание (5..1) и ставка на этот раунд уже принята
-        if (roundPhase === "waiting" && currentBet && currentBet.roundId === activeRoundId) {
+        if ((roundPhase === "waiting" && hasActiveBetInCurrentRound) || hasQueuedNext) {
           btnAction.disabled = true;
           btnAction.className = "btn-main";
-          btnAction.textContent = `Ставка ${currentBet.bet} ★ принята — ждём старт`;
+          btnAction.textContent = "Ожидание раунда";
           return;
         }
 
-        // 3. Во время раунда или краша — игрок НЕ может поставить в текущий раунд, ставит в очередь на СЛЕДУЮЩИЙ
         if (roundPhase === "running" || roundPhase === "crashed") {
-          if (queuedBet) {
-            btnAction.disabled = false;
-            btnAction.className = "btn-main queued-btn";
-            btnAction.textContent = `В очереди на след. раунд: ${queuedBet.bet} ★ (Отменить)`;
-          } else {
-            btnAction.disabled = false;
-            btnAction.className = "btn-main";
-            btnAction.textContent = `Поставить на след. раунд (${inputBet} ★)`;
-          }
+          btnAction.disabled = false;
+          btnAction.className = "btn-main";
+          btnAction.textContent = `Поставить (${inputBet} ★)`;
           return;
         }
 
-        // 4. Фаза ожидания (5..1), можно поставить на текущий стартующий раунд
         btnAction.disabled = false;
         btnAction.className = "btn-main";
         btnAction.textContent = `Поставить ${inputBet} ★`;
       }
 
       btnAutoToggle.onclick = () => {
+        if (btnAutoToggle.disabled) return;
         autoCashEnabled = !autoCashEnabled;
         btnAutoToggle.textContent = autoCashEnabled ? "ВКЛ" : "ВЫКЛ";
         btnAutoToggle.classList.toggle("on", autoCashEnabled);
@@ -812,18 +922,20 @@
 
       document.querySelectorAll("[data-av-bet]").forEach((btn) => {
         btn.onclick = () => {
+          if (btn.disabled) return;
           betInput.value = btn.getAttribute("data-av-bet");
-          syncActionButton();
+          syncControlsAndButton();
         };
       });
 
       document.querySelectorAll("[data-av-mult]").forEach((btn) => {
         btn.onclick = () => {
+          if (btn.disabled) return;
           targetInput.value = btn.getAttribute("data-av-mult");
         };
       });
 
-      betInput.oninput = syncActionButton;
+      betInput.oninput = syncControlsAndButton;
 
       async function placeBetForRound(targetRoundId, betAmount, autoOn, autoMultVal) {
         if (!tg?.initData) {
@@ -835,6 +947,9 @@
           toast("Недостаточно звёзд на балансе");
           return false;
         }
+
+        isPlacingBet = true;
+        syncControlsAndButton();
 
         try {
           const r = await fetch(apiUrl("/api/avalanche_start"), {
@@ -849,8 +964,11 @@
             })
           });
           const d = await r.json();
+          isPlacingBet = false;
+
           if (!d.ok) {
             toast(d.message || "Не удалось принять ставку");
+            syncControlsAndButton();
             return false;
           }
 
@@ -870,12 +988,16 @@
             cashoutMult: 0,
             payout: 0
           };
+
           renderPlayersList();
-          syncActionButton();
-          toast(`Ставка ${betAmount} ★ принята в раунд!`);
+          syncControlsAndButton();
+          pollRealAvalancheState();
+          toast(`Ставка ${betAmount} ★ принята`);
           return true;
         } catch (_) {
+          isPlacingBet = false;
           toast("Ошибка сети при ставке");
+          syncControlsAndButton();
           return false;
         }
       }
@@ -885,7 +1007,7 @@
         if (multToClaim <= 0.01) return;
 
         cashingOut = true;
-        syncActionButton();
+        syncControlsAndButton();
 
         const claimMult = Number(multToClaim.toFixed(2));
         const estPayout = Math.max(1, Math.round(currentBet.bet * claimMult));
@@ -905,7 +1027,7 @@
 
           if (!d.ok) {
             toast(d.message || "Не успел забрать до схода");
-            syncActionButton();
+            syncControlsAndButton();
             return;
           }
 
@@ -926,92 +1048,83 @@
           toast(`Забрано ${currentBet.cashoutMult.toFixed(2)}x (+${currentBet.payout} ★)!`);
 
           renderPlayersList();
-          syncActionButton();
+          syncControlsAndButton();
+          pollRealAvalancheState();
         } catch (_) {
           cashingOut = false;
           toast("Ошибка сети");
-          syncActionButton();
+          syncControlsAndButton();
         }
       }
 
       btnAction.onclick = async () => {
+        if (btnAction.disabled) return;
+
         const betVal = Math.max(1, Math.floor(Number(betInput.value || 10)));
         const autoVal = autoCashEnabled ? Math.max(1.05, Number(targetInput.value || 1.5)) : 0;
 
-        // Если в активном раунде — забираем выигрыш
         if (roundPhase === "running" && currentBet && currentBet.roundId === activeRoundId && currentBet.status === "playing") {
           await performCashout(currentMult);
           return;
         }
 
-        // Если раунд идёт или уже крашнулся — ставим/отменяем очередь на СЛЕДУЮЩИЙ раунд
         if (roundPhase === "running" || roundPhase === "crashed") {
-          if (queuedBet) {
-            queuedBet = null;
-            toast("Ставка на следующий раунд отменена");
-          } else {
-            const avail = Number(appState?.stars_balance || 0);
-            if (avail < betVal) {
-              toast("Недостаточно звёзд на балансе");
-              return;
-            }
-            queuedBet = { bet: betVal, autoEnabled: autoCashEnabled, autoMult: autoVal };
-            toast(`Ставка ${betVal} ★ поставлена в очередь на следующий раунд`);
+          if (queuedBet) return;
+          const avail = Number(appState?.stars_balance || 0);
+          if (avail < betVal) {
+            toast("Недостаточно звёзд на балансе");
+            return;
           }
-          syncActionButton();
+          queuedBet = { bet: betVal, autoEnabled: autoCashEnabled, autoMult: autoVal };
+          syncControlsAndButton();
+          toast(`Ставка ${betVal} ★ в очереди на следующий раунд`);
           return;
         }
 
-        // Если фаза ожидания (5..1) — ставим сразу в текущий стартующий раунд
         if (roundPhase === "waiting") {
           if (currentBet && currentBet.roundId === activeRoundId) return;
-          btnAction.disabled = true;
           await placeBetForRound(activeRoundId, betVal, autoCashEnabled, autoVal);
         }
       };
 
       /* =========================================================
-         6. ГЛАВНЫЙ ЦИКЛ СИНХРОНИЗАЦИИ ОБЩЕГО РАУНДА (5..4..3..2..1 -> ПОЛЁТ -> КРАШ)
+         6. ГЛАВНЫЙ ЦИКЛ ОБЩЕГО РАУНДА (БЕЗ БОТОВ, ИДЁТ ДАЖЕ ПРИ 0 ИГРОКОВ)
       ========================================================= */
       const WAIT_SEC = 5.0;
-      const CRASH_PAUSE_SEC = 3.2;
+      const CRASH_PAUSE_SEC = 3.8;
+      const SLOT_LEN = 32.0;
       let prevEpochIdx = -1;
 
       function tickSharedRound() {
         const nowSec = Date.now() / 1000;
-        // Средняя длина одного полного цикла ~22 сек, детерминированно привязана к времени
-        // чтобы все игроки, зашедшие в игру одновременно, видели один и тот же раунд
-        const SLOT_LEN = 24.0;
         const epochIdx = Math.floor(nowSec / SLOT_LEN);
         const slotOffset = nowSec - epochIdx * SLOT_LEN;
 
-        const rId = `round_${epochIdx}`;
-        const targetCrash = generateCrashForSeed(epochIdx);
-        const flightDuration = computeDurationForCrash(targetCrash);
-        const activeFlightLen = Math.min(SLOT_LEN - WAIT_SEC - CRASH_PAUSE_SEC, flightDuration);
-        const effectiveCrash = targetCrash <= 0
+        const rId = serverAvalancheData?.round_id || `round_${epochIdx}`;
+        const rawCrash = typeof serverAvalancheData?.crash_mult === "number"
+          ? Number(serverAvalancheData.crash_mult)
+          : computeFallbackCrash(epochIdx);
+
+        const flightDuration = computeDurationForCrash(rawCrash);
+        const maxFlight = SLOT_LEN - WAIT_SEC - CRASH_PAUSE_SEC;
+        const activeFlightLen = Math.min(maxFlight, flightDuration);
+        const effectiveCrash = rawCrash <= 0
           ? 0.0
           : computeMultiplierAtElapsed(activeFlightLen);
 
-        // Переход на новый раунд
         if (epochIdx !== prevEpochIdx) {
           prevEpochIdx = epochIdx;
           activeRoundId = rId;
           crashMult = effectiveCrash;
           lastCountdownNum = null;
           lastTickBucket = -1;
+          realRoundPlayers = [];
+          crashClumps = [];
 
-          if (historyMults.length === 0) {
-            historyMults = buildInitialHistory(epochIdx);
-          }
-          renderHistoryBar();
-
-          roundPlayers = buildSimulatedPlayers(epochIdx, effectiveCrash);
           if (currentBet && currentBet.roundId !== rId) {
             currentBet = null;
           }
 
-          // Если была очередь со старого раунда — автоматически принимаем ставку в новый раунд
           if (queuedBet) {
             const q = queuedBet;
             queuedBet = null;
@@ -1019,19 +1132,22 @@
           }
 
           renderPlayersList();
+          pollRealAvalancheState();
         }
 
-        // ФАЗА 1: ОЖИДАНИЕ И ОТСЧЁТ 5.. 4.. 3.. 2.. 1..
+        // ФАЗА 1: ОБРАТНЫЙ ОТСЧЁТ 5.. 4.. 3.. 2.. 1..
         if (slotOffset < WAIT_SEC) {
           roundPhase = "waiting";
           currentMult = 0.0;
           const left = Math.max(0.01, WAIT_SEC - slotOffset);
-          const countNum = Math.ceil(left); // 5, 4, 3, 2, 1
+          const countNum = Math.ceil(left);
 
           arena.className = "avalanche-arena waiting";
           stageLabelEl.textContent = "СТАРТ ЧЕРЕЗ";
           multEl.textContent = `${countNum}`;
-          statusEl.textContent = `Приём ставок на раунд · старт через ${countNum} сек.`;
+          statusEl.textContent = currentBet && currentBet.roundId === rId
+            ? `Ваша ставка ${currentBet.bet} ★ принята · старт через ${countNum} сек.`
+            : `Приём ставок · старт через ${countNum} сек.`;
           waveEl.style.transform = "translateY(100%)";
 
           countdownTrack.style.display = "block";
@@ -1042,37 +1158,39 @@
             playTick();
           }
 
-          syncActionButton();
+          syncControlsAndButton();
           requestAnimationFrame(tickSharedRound);
           return;
         }
 
         countdownTrack.style.display = "none";
 
-        // ФАЗА 2: РАУНД ИДЁТ (ПЛАВНЫЙ РАЗГОН ОТ 0.00x)
+        // ФАЗА 2: АКТИВНЫЙ РАУНД (ПЛАВНЫЙ УСКОРЯЮЩИЙСЯ РАЗГОН ОТ 0.00x)
         const flightElapsed = slotOffset - WAIT_SEC;
         if (flightElapsed < activeFlightLen && effectiveCrash > 0) {
           roundPhase = "running";
           currentMult = computeMultiplierAtElapsed(flightElapsed);
 
           const hasWon = currentBet && currentBet.roundId === rId && currentBet.status === "won";
-          arena.className = `avalanche-arena running${hasWon ? " won" : ""}${currentMult >= 2.8 ? " danger" : ""}`;
+          arena.className = `avalanche-arena running${hasWon ? " won" : ""}${currentMult >= 3.0 ? " danger" : ""}`;
           stageLabelEl.textContent = "ПОДЪЁМ ЛАВИНЫ";
           multEl.textContent = `${currentMult.toFixed(2)}x`;
 
           if (hasWon) {
-            statusEl.textContent = `Вы забрали +${currentBet.payout} ★ (${currentBet.cashoutMult.toFixed(2)}x) · лавина летит дальше`;
+            statusEl.textContent = `Вы забрали +${currentBet.payout} ★ (${currentBet.cashoutMult.toFixed(2)}x) · раунд продолжается`;
           } else if (currentBet && currentBet.roundId === rId && currentBet.status === "playing") {
-            statusEl.textContent = "Жми «Забрать», пока лавина не сошла!";
+            statusEl.textContent = "Жми «Забрать», пока лавина не накрыла!";
+          } else if (queuedBet) {
+            statusEl.textContent = `Ваша ставка ${queuedBet.bet} ★ ждёт следующий раунд`;
           } else {
             statusEl.textContent = "Раунд идёт · ставка сейчас пойдёт на следующий раунд";
           }
 
-          // Плавный подъём снежной волны
-          const waveRise = Math.max(12, 92 - currentMult * 11);
+          // Плавный подъём снежной волны снизу вверх
+          const waveRise = Math.max(10, 96 - currentMult * 9.5);
           waveEl.style.transform = `translateY(${waveRise}%)`;
 
-          // Авто-выход игрока
+          // Авто-выход
           if (
             currentBet &&
             currentBet.roundId === rId &&
@@ -1084,43 +1202,33 @@
             performCashout(currentBet.autoMult);
           }
 
-          // Обновление статусов остальных игроков в списке
-          let playersDirty = false;
-          for (const p of roundPlayers) {
-            if (p.status === "playing" && p.willWin && currentMult >= p.targetMult) {
-              p.status = "won";
-              p.cashoutMult = p.targetMult;
-              p.payout = Math.max(1, Math.round(p.bet * p.targetMult));
-              playersDirty = true;
-            }
-          }
-          if (playersDirty) renderPlayersList();
-
-          // Звуковой тик по мере роста икса
-          const bucket = Math.floor(currentMult * 5);
+          // Мягкий звуковой тик каждые 0.25x
+          const bucket = Math.floor(currentMult * 4);
           if (bucket !== lastTickBucket) {
             lastTickBucket = bucket;
             playTick();
           }
 
-          syncActionButton();
+          syncControlsAndButton();
           requestAnimationFrame(tickSharedRound);
           return;
         }
 
-        // ФАЗА 3: КРАШ ЛАВИНЫ (включая 0.00x)
+        // ФАЗА 3: КОНЕЦ РАУНДА / ОБВАЛ ЛАВИНЫ В СУГРОБЫ (включая 0.00x)
         if (roundPhase !== "crashed") {
           roundPhase = "crashed";
           currentMult = effectiveCrash;
+          waveEl.style.transform = "translateY(100%)";
+          spawnSnowCollapseClumps();
 
-          // Записываем икс в ленту истории
-          if (historyMults[0] !== effectiveCrash || historyMults.length === 0) {
-            historyMults.unshift(effectiveCrash);
-            if (historyMults.length > 14) historyMults.pop();
-            renderHistoryBar();
+          if (!serverAvalancheData?.history) {
+            if (historyMults[0] !== effectiveCrash || historyMults.length === 0) {
+              historyMults.unshift(effectiveCrash);
+              if (historyMults.length > 14) historyMults.pop();
+              renderHistoryBar();
+            }
           }
 
-          // Все, кто не успел забрать — проиграли (красным и x0)
           if (currentBet && currentBet.roundId === rId && currentBet.status === "playing") {
             currentBet.status = "lost";
             currentBet.cashoutMult = 0;
@@ -1128,7 +1236,7 @@
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
           }
 
-          for (const p of roundPlayers) {
+          for (const p of realRoundPlayers) {
             if (p.status === "playing") {
               p.status = "lost";
               p.cashoutMult = 0;
@@ -1136,19 +1244,22 @@
             }
           }
           renderPlayersList();
+          pollRealAvalancheState();
         }
 
         arena.className = "avalanche-arena crashed";
         stageLabelEl.textContent = effectiveCrash <= 0 ? "МГНОВЕННЫЙ СХОД" : "ЛАВИНА СОШЛА";
         multEl.textContent = `${effectiveCrash.toFixed(2)}x`;
         statusEl.textContent = effectiveCrash <= 0
-          ? "Лавина обрушилась на 0.00x! Следующий раунд через пару секунд..."
-          : `Лавина накрыла на ${effectiveCrash.toFixed(2)}x · готовим новый раунд...`;
+          ? "Лавина обрушилась на 0.00x! Новый раунд через пару секунд..."
+          : `Снег накрыл арену на ${effectiveCrash.toFixed(2)}x · можно ставить на новый раунд`;
 
-        syncActionButton();
+        syncControlsAndButton();
         requestAnimationFrame(tickSharedRound);
       }
 
+      renderHistoryBar();
+      renderPlayersList();
       requestAnimationFrame(tickSharedRound);
     })();
   </script>
