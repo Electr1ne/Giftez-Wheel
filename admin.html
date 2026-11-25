@@ -113,7 +113,10 @@
         <span>Выводы</span>
         <span class="adm-badge-cnt" id="admReqsCountBadge" style="display:none;">0</span>
       </button>
-      <button type="button" class="adm-tab-btn" data-adm-tab="system">Система</button>
+      <button type="button" class="adm-tab-btn" data-adm-tab="system">
+        <span>Система</span>
+        <span class="adm-badge-cnt" id="admIdeasTabBadge" style="display:none;">0</span>
+      </button>
     </div>
 
     <!-- ВКЛАДКА 1: ИГРОКИ, КЕЙСЫ И ПРОМОКОДЫ -->
@@ -243,8 +246,22 @@
       </div>
     </div>
 
-    <!-- ВКЛАДКА 4: СИСТЕМА, ВЕРСИИ UI И РАССЫЛКА -->
+    <!-- ВКЛАДКА 4: СИСТЕМА, ИДЕИ ИГРОКОВ, ВЕРСИИ UI И РАССЫЛКА -->
     <div class="adm-pane fade-in" id="pane-system">
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Идеи игроков</h3>
+          <span class="pill-ice" id="admIdeasPendingChip">0 новых</span>
+        </div>
+        <div class="compact-row">
+          <div>
+            <div class="row-title">Модерация предложений</div>
+            <div class="row-sub">Отдельная страница: принять (с ★ / без) или отклонить</div>
+          </div>
+          <a href="admin_ideas.html" class="btn-ice-sm btn-sm-act" style="text-decoration:none;">Открыть &gt;</a>
+        </div>
+      </div>
+
       <div class="compact-card">
         <div class="compact-head">
           <h3>Дизайн и доступ</h3>
@@ -301,7 +318,6 @@
       let appState = null;
       let promoRewardType = "stars";
 
-      // Переключение компактных вкладок админки
       document.querySelectorAll("[data-adm-tab]").forEach((btn) => {
         btn.onclick = () => {
           const target = btn.getAttribute("data-adm-tab");
@@ -397,6 +413,21 @@
         } catch (err) {
           toast("Сервер Bothost недоступен");
           return null;
+        }
+      }
+
+      async function loadPendingIdeasCount() {
+        const d = await adminPost("/api/admin/ideas", { status: "pending" });
+        if (!d || !Array.isArray(d.ideas)) return;
+        const cnt = d.ideas.length;
+        const tabBadge = document.getElementById("admIdeasTabBadge");
+        const chip = document.getElementById("admIdeasPendingChip");
+        if (tabBadge) {
+          tabBadge.style.display = cnt > 0 ? "inline-block" : "none";
+          tabBadge.textContent = String(cnt);
+        }
+        if (chip) {
+          chip.textContent = `${cnt} новых`;
         }
       }
 
@@ -530,6 +561,7 @@
       appState = session.state;
       syncModeLabels();
       loadRequests();
+      loadPendingIdeasCount();
 
       const btnSnow = document.getElementById("btnToggleSnowflakes");
       btnSnow.onclick = async () => {

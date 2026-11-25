@@ -6,6 +6,102 @@
   <title>GiftezUp — Профиль</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
+  <style>
+    .idea-sheet {
+      width: 100%;
+      max-width: 420px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: #0d1322;
+      border: 1px solid var(--border-strong);
+      border-radius: 24px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.72);
+      animation: enterSoft 0.2s ease;
+    }
+    .idea-faq-box {
+      padding: 10px 11px;
+      border-radius: 13px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.42;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .idea-faq-box b {
+      color: var(--ice-bright);
+    }
+    .idea-field-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+    .idea-textarea {
+      width: 100%;
+      min-height: 70px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 9px 11px;
+      font-family: inherit;
+      font-size: 13px;
+      resize: vertical;
+      outline: none;
+    }
+    .idea-textarea:focus {
+      border-color: var(--ice-bright);
+    }
+    .idea-item-card {
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .idea-status-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .idea-status-badge.pending {
+      background: var(--gold-soft);
+      border: 1px solid rgba(251, 191, 36, 0.38);
+      color: #fde047;
+    }
+    .idea-status-badge.accepted {
+      background: var(--ice-soft);
+      border: 1px solid var(--ice-border);
+      color: var(--ice-bright);
+    }
+    .idea-status-badge.rejected {
+      background: rgba(244, 63, 94, 0.16);
+      border: 1px solid rgba(244, 63, 94, 0.42);
+      color: #fda4af;
+    }
+    .idea-meta-note {
+      font-size: 11.5px;
+      padding: 7px 9px;
+      border-radius: 10px;
+      background: rgba(7, 10, 18, 0.48);
+      border: 1px solid var(--border);
+      color: #e2e8f0;
+      line-height: 1.38;
+    }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -44,12 +140,95 @@
       <input type="text" class="field-input" id="promoInput" placeholder="Введи промокод" autocomplete="off" />
       <button type="button" class="btn-main" id="promoActivateBtn">Активировать промокод</button>
     </div>
+
+    <!-- Компактный блок идей (не занимает лишнее место, список скрыт в окне) -->
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <div>
+          <h2>Идеи для GiftezUp</h2>
+          <div class="row-sub">Предложи новый кейс, режим или улучшение</div>
+        </div>
+        <span class="pill-ice">IDEAS</span>
+      </div>
+      <div class="grid-2">
+        <button type="button" class="btn-main" id="openIdeaCreateBtn" style="height:42px;min-height:42px;">
+          Предложить идею
+        </button>
+        <button type="button" class="btn-soft" id="openMyIdeasBtn" style="height:42px;min-height:42px;">
+          Мои идеи (<span id="myIdeasCountSpan">0</span>)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно подачи идеи и просмотра своих идей -->
+  <div class="backdrop" id="ideaModalBackdrop">
+    <div class="idea-sheet">
+      <div class="card-head">
+        <h2 id="ideaModalTitle">Предложить идею</h2>
+        <button type="button" class="btn-mini-refresh" id="closeIdeaModalBtn">Закрыть</button>
+      </div>
+
+      <div class="wallet-tabs">
+        <button type="button" class="wallet-tab-btn active" id="tabIdeaNewBtn">Новая идея</button>
+        <button type="button" class="wallet-tab-btn" id="tabIdeaListBtn">
+          Мои идеи (<span id="myIdeasTabCnt">0</span>)
+        </button>
+      </div>
+
+      <!-- Вкладка 1: Форма + мини-FAQ -->
+      <div id="ideaNewPane" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="idea-faq-box">
+          <div><b>Мини-FAQ по идеям:</b></div>
+          <div>• Новую идею можно отправлять раз в <b>30 минут</b>.</div>
+          <div>• Если идею отклонили — следующую можно подать только через <b>24 часа</b>.</div>
+          <div>• Принятая идея выходит в ближайших <b>2–4 обновлениях</b> (крупная — <b>5–7</b>).</div>
+          <div>• Награда в <b>★</b> выдаётся на усмотрение админа (могут принять и без начисления).</div>
+        </div>
+
+        <div>
+          <label class="idea-field-label" for="ideaThemeInput">Тема идеи</label>
+          <input type="text" class="field-input" id="ideaThemeInput" maxlength="100" placeholder="Например: Новый кейс «Ледяной пик» или режим" />
+        </div>
+
+        <div>
+          <label class="idea-field-label" for="ideaDescInput">Описание</label>
+          <textarea class="idea-textarea" id="ideaDescInput" maxlength="800" placeholder="В чём суть идеи и чем она будет интересна игрокам?"></textarea>
+        </div>
+
+        <div>
+          <label class="idea-field-label" for="ideaImplInput">Как видишь реализацию</label>
+          <textarea class="idea-textarea" id="ideaImplInput" maxlength="800" placeholder="Как это должно работать на практике (кнопки, баланс, логика)?"></textarea>
+        </div>
+
+        <div class="note-box" id="ideaCooldownNote" style="display:none;"></div>
+
+        <button type="button" class="btn-main" id="submitIdeaBtn">Отправить идею</button>
+      </div>
+
+      <!-- Вкладка 2: Мои идеи (скрыта по умолчанию, не мешает заполнению) -->
+      <div id="ideaListPane" style="display:none;flex-direction:column;gap:8px;">
+        <div class="items-stack" id="myIdeasStack">
+          <div class="empty-box">Загрузка твоих идей...</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="assets/app.js"></script>
   <script>
     (function () {
       let appState = null;
+      let myIdeas = [];
+      let ideaCooldown = { can_submit: true, next_allowed_at: 0, cooldown_reason: "" };
+
+      function formatLeft(sec) {
+        const total = Math.max(0, Math.floor(sec));
+        const h = String(Math.floor(total / 3600)).padStart(2, "0");
+        const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
+        const s = String(total % 60).padStart(2, "0");
+        return `${h}:${m}:${s}`;
+      }
 
       function syncProfile() {
         const u = tg?.initDataUnsafe?.user;
@@ -68,6 +247,114 @@
         }
       }
 
+      function updateIdeaCooldownUI() {
+        const btn = document.getElementById("submitIdeaBtn");
+        const note = document.getElementById("ideaCooldownNote");
+        const now = Math.floor(Date.now() / 1000);
+        const nextAt = Number(ideaCooldown.next_allowed_at || 0);
+
+        if (ideaCooldown.can_submit || !nextAt || nextAt <= now) {
+          btn.disabled = false;
+          btn.textContent = "Отправить идею";
+          note.style.display = "none";
+          return;
+        }
+
+        const leftStr = formatLeft(nextAt - now);
+        btn.disabled = true;
+        btn.textContent = `Доступно через ${leftStr}`;
+        note.style.display = "block";
+        note.innerHTML =
+          ideaCooldown.cooldown_reason === "rejected_24h"
+            ? `Предыдущая идея была отклонена. Новую можно подать через <b>${leftStr}</b>.`
+            : `Кулдаун между отправками: следующая идея доступна через <b>${leftStr}</b>.`;
+      }
+
+      function renderMyIdeasList() {
+        const cntStr = String(myIdeas.length);
+        document.getElementById("myIdeasCountSpan").textContent = cntStr;
+        document.getElementById("myIdeasTabCnt").textContent = cntStr;
+
+        const stack = document.getElementById("myIdeasStack");
+        if (!myIdeas.length) {
+          stack.innerHTML = `<div class="empty-box">Ты ещё не отправлял идеи</div>`;
+          return;
+        }
+
+        stack.innerHTML = myIdeas
+          .map((item) => {
+            const st = item.status || "pending";
+            let statusLabel = "На рассмотрении";
+            if (st === "accepted") statusLabel = "Принято";
+            if (st === "rejected") statusLabel = "Отклонено";
+
+            let extraHtml = "";
+            if (st === "accepted") {
+              const rewardText =
+                Number(item.stars_reward) > 0
+                  ? `Награда: <b>+${Number(item.stars_reward)} ★</b>`
+                  : `Награда: <b>без начисления ★</b>`;
+              const etaText = item.eta_updates ? ` · Выход: <b>${escapeHtml(item.eta_updates)} обнов.</b>` : "";
+              extraHtml = `<div class="idea-meta-note">${rewardText}${etaText}</div>`;
+            } else if (st === "rejected") {
+              const reasonText = item.reject_reason
+                ? `Причина: <b>${escapeHtml(item.reject_reason)}</b>`
+                : `Причина не указана администратором`;
+              extraHtml = `<div class="idea-meta-note">${reasonText}</div>`;
+            }
+
+            return `
+              <div class="idea-item-card">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+                  <div class="row-title">#${Number(item.id)} · ${escapeHtml(item.theme)}</div>
+                  <span class="idea-status-badge ${escapeHtml(st)}">${statusLabel}</span>
+                </div>
+                <div class="row-sub" style="white-space:pre-wrap;color:#cbd5e1;">${escapeHtml(item.description)}</div>
+                <div class="row-sub" style="white-space:pre-wrap;"><b>Реализация:</b> ${escapeHtml(item.implementation_logic)}</div>
+                ${extraHtml}
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadIdeasData() {
+        if (!tg?.initData) return;
+        try {
+          const r = await fetch(apiUrl("/api/ideas"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData: tg.initData })
+          });
+          const d = await r.json();
+          if (d.ok) {
+            myIdeas = Array.isArray(d.ideas) ? d.ideas : [];
+            ideaCooldown = d.cooldown || { can_submit: true, next_allowed_at: 0, cooldown_reason: "" };
+            renderMyIdeasList();
+            updateIdeaCooldownUI();
+          }
+        } catch (_) {}
+      }
+
+      function switchIdeaTab(tabName) {
+        const isNew = tabName === "new";
+        document.getElementById("tabIdeaNewBtn").classList.toggle("active", isNew);
+        document.getElementById("tabIdeaListBtn").classList.toggle("active", !isNew);
+        document.getElementById("ideaNewPane").style.display = isNew ? "flex" : "none";
+        document.getElementById("ideaListPane").style.display = isNew ? "none" : "flex";
+        document.getElementById("ideaModalTitle").textContent = isNew ? "Предложить идею" : "Мои идеи";
+      }
+
+      function openIdeaModal(initialTab) {
+        switchIdeaTab(initialTab);
+        document.getElementById("ideaModalBackdrop").classList.add("open");
+        loadIdeasData();
+      }
+
+      function closeIdeaModal() {
+        document.getElementById("ideaModalBackdrop").classList.remove("open");
+      }
+
       const session = initGiftezPage("profile", {
         onStateReady(fresh) {
           appState = fresh;
@@ -77,6 +364,80 @@
       if (!session) return;
       appState = session.state;
       syncProfile();
+      loadIdeasData();
+
+      setInterval(updateIdeaCooldownUI, 1000);
+
+      document.getElementById("openIdeaCreateBtn").onclick = () => openIdeaModal("new");
+      document.getElementById("openMyIdeasBtn").onclick = () => openIdeaModal("list");
+      document.getElementById("closeIdeaModalBtn").onclick = closeIdeaModal;
+      document.getElementById("tabIdeaNewBtn").onclick = () => switchIdeaTab("new");
+      document.getElementById("tabIdeaListBtn").onclick = () => switchIdeaTab("list");
+      document.getElementById("ideaModalBackdrop").onclick = (e) => {
+        if (e.target.id === "ideaModalBackdrop") closeIdeaModal();
+      };
+
+      document.getElementById("submitIdeaBtn").onclick = async () => {
+        const theme = document.getElementById("ideaThemeInput").value.trim();
+        const description = document.getElementById("ideaDescInput").value.trim();
+        const implementation_logic = document.getElementById("ideaImplInput").value.trim();
+
+        if (theme.length < 3) {
+          toast("Укажи тему идеи (минимум 3 символа)");
+          return;
+        }
+        if (description.length < 10) {
+          toast("Опиши идею подробнее (минимум 10 символов)");
+          return;
+        }
+        if (implementation_logic.length < 10) {
+          toast("Опиши, как видишь реализацию (минимум 10 символов)");
+          return;
+        }
+        if (!tg?.initData) {
+          toast("Открой в Telegram");
+          return;
+        }
+
+        const btn = document.getElementById("submitIdeaBtn");
+        btn.disabled = true;
+        try {
+          const r = await fetch(apiUrl("/api/ideas/create"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              initData: tg.initData,
+              theme,
+              description,
+              implementation_logic
+            })
+          });
+          const d = await r.json();
+          if (d.ok) {
+            playWin();
+            document.getElementById("ideaThemeInput").value = "";
+            document.getElementById("ideaDescInput").value = "";
+            document.getElementById("ideaImplInput").value = "";
+            if (d.idea) myIdeas.unshift(d.idea);
+            if (d.cooldown) ideaCooldown = d.cooldown;
+            renderMyIdeasList();
+            updateIdeaCooldownUI();
+            switchIdeaTab("list");
+            toast(d.message || "Идея отправлена!");
+          } else {
+            if (d.cooldown) {
+              ideaCooldown = d.cooldown;
+              updateIdeaCooldownUI();
+            } else {
+              btn.disabled = false;
+            }
+            toast(d.message || "Не удалось отправить идею");
+          }
+        } catch (_) {
+          btn.disabled = false;
+          toast("Ошибка сети");
+        }
+      };
 
       document.getElementById("promoActivateBtn").onclick = async () => {
         const inp = document.getElementById("promoInput");

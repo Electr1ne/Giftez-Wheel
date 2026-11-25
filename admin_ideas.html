@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GiftezUp — Идеи игроков</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+  <style>
+    .ideas-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      padding: 4px;
+      border-radius: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+    }
+    .ideas-filter-btn {
+      height: 34px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .ideas-filter-btn.active {
+      background: var(--ice-soft);
+      border-color: var(--ice-border);
+      color: var(--ice-bright);
+    }
+    .adm-idea-card {
+      padding: 12px;
+      border-radius: 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .adm-idea-block {
+      padding: 8px 10px;
+      border-radius: 11px;
+      background: rgba(7, 10, 18, 0.45);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: #e2e8f0;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+    .adm-idea-block-title {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--ice-bright);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .idea-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .idea-badge.pending {
+      background: var(--gold-soft);
+      border: 1px solid rgba(251, 191, 36, 0.38);
+      color: #fde047;
+    }
+    .idea-badge.accepted {
+      background: var(--ice-soft);
+      border: 1px solid var(--ice-border);
+      color: var(--ice-bright);
+    }
+    .idea-badge.rejected {
+      background: rgba(244, 63, 94, 0.16);
+      border: 1px solid rgba(244, 63, 94, 0.42);
+      color: #fda4af;
+    }
+    .btn-sm-act {
+      height: 36px;
+      min-height: 36px;
+      font-size: 11.5px;
+      padding: 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="headerMount"></div>
+
+    <div class="section-card fade-in" style="padding:12px;">
+      <div class="card-head">
+        <div>
+          <h2>Идеи игроков</h2>
+          <div class="row-sub">Модерация предложений от сообщества</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="btn-mini-refresh" id="reloadIdeasBtn">Обновить</button>
+          <a href="admin.html" class="btn-mini-refresh">← Админка</a>
+        </div>
+      </div>
+
+      <div class="ideas-filter-grid" id="ideasFilterBar">
+        <button type="button" class="ideas-filter-btn active" data-filter="pending">Новые</button>
+        <button type="button" class="ideas-filter-btn" data-filter="accepted">Принятые</button>
+        <button type="button" class="ideas-filter-btn" data-filter="rejected">Отклонён.</button>
+        <button type="button" class="ideas-filter-btn" data-filter="all">Все</button>
+      </div>
+
+      <div class="items-stack" id="adminIdeasStack">
+        <div class="empty-box">Загрузка идей...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка принятия идеи (выбор срока обновлений и награды в ★) -->
+  <div class="backdrop" id="acceptIdeaBackdrop">
+    <div class="wallet-sheet">
+      <div class="card-head">
+        <h2 id="acceptModalTitle">Принять идею</h2>
+        <button type="button" class="btn-mini-refresh" id="closeAcceptModalBtn">Закрыть</button>
+      </div>
+
+      <div>
+        <div class="row-sub" style="margin-bottom:5px;">Ориентир реализации (обновлений):</div>
+        <div class="grid-2">
+          <button type="button" class="btn-ice-sm btn-sm-act" id="eta24Btn">2–4 обновления</button>
+          <button type="button" class="btn-soft btn-sm-act" id="eta57Btn">5–7 обновлений</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="row-sub" style="margin-bottom:5px;">Награда автору в звёздах (0 = без начисления ★):</div>
+        <input type="number" class="field-input" id="acceptStarsInput" min="0" max="10000" value="0" placeholder="0" />
+        <div class="packs-grid-4" style="margin-top:7px;">
+          <button type="button" class="pack-btn" data-star-preset="0">0 ★</button>
+          <button type="button" class="pack-btn" data-star-preset="5">5 ★</button>
+          <button type="button" class="pack-btn" data-star-preset="15">15 ★</button>
+          <button type="button" class="pack-btn" data-star-preset="25">25 ★</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn-main" id="confirmAcceptIdeaBtn">Подтвердить принятие</button>
+    </div>
+  </div>
+
+  <!-- Модалка отклонения идеи (опциональная причина) -->
+  <div class="backdrop" id="rejectIdeaBackdrop">
+    <div class="wallet-sheet">
+      <div class="card-head">
+        <h2 id="rejectModalTitle">Отклонить идею</h2>
+        <button type="button" class="btn-mini-refresh" id="closeRejectModalBtn">Закрыть</button>
+      </div>
+
+      <div class="note-box">
+        После отклонения игрок сможет отправить следующую идею только через <b>24 часа</b>. Причину указывать необязательно.
+      </div>
+
+      <textarea class="broadcast-area" id="rejectReasonInput" rows="3" maxlength="400" placeholder="Причина отказа (оставь пустым, чтобы отклонить без причины)"></textarea>
+
+      <button type="button" class="btn-red-sm" id="confirmRejectIdeaBtn" style="height:44px;min-height:44px;">Отклонить идею</button>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    (function () {
+      let currentFilter = "pending";
+      let selectedIdeaId = 0;
+      let selectedEta = "2–4";
+
+      async function adminPost(path, payload = {}) {
+        const initData = window.Telegram?.WebApp?.initData || "";
+        if (!initData) {
+          toast("Открой страницу внутри Telegram Mini App");
+          return null;
+        }
+        try {
+          const r = await fetch(apiUrl(path), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, ...payload })
+          });
+          const data = await r.json();
+          if (!r.ok || !data.ok) {
+            toast(data.message || `Ошибка сервера (${r.status})`);
+            return null;
+          }
+          return data;
+        } catch (_) {
+          toast("Сервер Bothost недоступен");
+          return null;
+        }
+      }
+
+      function formatDate(ts) {
+        if (!ts) return "";
+        const d = new Date(Number(ts) * 1000);
+        return d.toLocaleString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      function openAcceptModal(ideaId, presetStars) {
+        selectedIdeaId = Number(ideaId);
+        selectedEta = "2–4";
+        document.getElementById("acceptModalTitle").textContent = `Принять идею #${selectedIdeaId}`;
+        document.getElementById("acceptStarsInput").value = String(presetStars || 0);
+        document.getElementById("eta24Btn").className = "btn-ice-sm btn-sm-act";
+        document.getElementById("eta57Btn").className = "btn-soft btn-sm-act";
+        document.getElementById("acceptIdeaBackdrop").classList.add("open");
+      }
+
+      function openRejectModal(ideaId) {
+        selectedIdeaId = Number(ideaId);
+        document.getElementById("rejectModalTitle").textContent = `Отклонить идею #${selectedIdeaId}`;
+        document.getElementById("rejectReasonInput").value = "";
+        document.getElementById("rejectIdeaBackdrop").classList.add("open");
+      }
+
+      async function loadIdeas() {
+        const stack = document.getElementById("adminIdeasStack");
+        const d = await adminPost("/api/admin/ideas", { status: currentFilter });
+        if (!d) return;
+
+        const list = Array.isArray(d.ideas) ? d.ideas : [];
+        if (!list.length) {
+          stack.innerHTML = `<div class="empty-box">В этом разделе идей пока нет</div>`;
+          return;
+        }
+
+        stack.innerHTML = list
+          .map((item) => {
+            const st = item.status || "pending";
+            let badgeText = "На рассмотрении";
+            if (st === "accepted") badgeText = "Принято";
+            if (st === "rejected") badgeText = "Отклонено";
+
+            const authorStr = item.username ? `@${escapeHtml(item.username)}` : "Без username";
+
+            let footerHtml = "";
+            if (st === "pending") {
+              footerHtml = `
+                <div class="grid-2">
+                  <button type="button" class="btn-ice-sm btn-sm-act" data-acc-zero="${item.id}">Принять (0 ★)</button>
+                  <button type="button" class="btn-ice-sm btn-sm-act" data-acc-modal="${item.id}">Принять + ★</button>
+                </div>
+                <div class="grid-2">
+                  <button type="button" class="btn-red-sm btn-sm-act" data-rej-zero="${item.id}">Отклонить</button>
+                  <button type="button" class="btn-soft btn-sm-act" data-rej-modal="${item.id}">Отклонить + причина</button>
+                </div>
+              `;
+            } else if (st === "accepted") {
+              const rew = Number(item.stars_reward) > 0 ? `+${Number(item.stars_reward)} ★` : "без начисления ★";
+              const eta = item.eta_updates ? ` · Срок: ${escapeHtml(item.eta_updates)} обнов.` : "";
+              footerHtml = `<div class="note-box">Решение: <b>Принято</b> (${rew}${eta})</div>`;
+            } else if (st === "rejected") {
+              const rsn = item.reject_reason ? escapeHtml(item.reject_reason) : "причина не указана";
+              footerHtml = `<div class="note-box">Решение: <b>Отклонено</b> (${rsn})</div>`;
+            }
+
+            return `
+              <div class="adm-idea-card">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+                  <div>
+                    <div class="row-title">#${Number(item.id)} · ${escapeHtml(item.theme)}</div>
+                    <div class="row-sub">${authorStr} · ID ${Number(item.user_id)} · ${formatDate(item.created_at)}</div>
+                  </div>
+                  <span class="idea-badge ${escapeHtml(st)}">${badgeText}</span>
+                </div>
+
+                <div class="adm-idea-block">
+                  <div class="adm-idea-block-title">Описание</div>
+                  ${escapeHtml(item.description)}
+                </div>
+
+                <div class="adm-idea-block">
+                  <div class="adm-idea-block-title">Как видит реализацию</div>
+                  ${escapeHtml(item.implementation_logic)}
+                </div>
+
+                ${footerHtml}
+              </div>
+            `;
+          })
+          .join("");
+
+        stack.querySelectorAll("[data-acc-zero]").forEach((btn) => {
+          btn.onclick = async () => {
+            const id = Number(btn.getAttribute("data-acc-zero"));
+            btn.disabled = true;
+            const out = await adminPost("/api/admin/ideas/review", {
+              idea_id: id,
+              decision: "accepted",
+              stars_reward: 0,
+              eta_updates: "2–4"
+            });
+            btn.disabled = false;
+            if (out) {
+              toast("Идея принята (0 ★)");
+              loadIdeas();
+            }
+          };
+        });
+
+        stack.querySelectorAll("[data-acc-modal]").forEach((btn) => {
+          btn.onclick = () => openAcceptModal(btn.getAttribute("data-acc-modal"), 10);
+        });
+
+        stack.querySelectorAll("[data-rej-zero]").forEach((btn) => {
+          btn.onclick = async () => {
+            const id = Number(btn.getAttribute("data-rej-zero"));
+            btn.disabled = true;
+            const out = await adminPost("/api/admin/ideas/review", {
+              idea_id: id,
+              decision: "rejected",
+              reject_reason: ""
+            });
+            btn.disabled = false;
+            if (out) {
+              toast("Идея отклонена");
+              loadIdeas();
+            }
+          };
+        });
+
+        stack.querySelectorAll("[data-rej-modal]").forEach((btn) => {
+          btn.onclick = () => openRejectModal(btn.getAttribute("data-rej-modal"));
+        });
+      }
+
+      const session = initGiftezPage("admin", {
+        requireAdmin: true,
+        onStateReady() {}
+      });
+      if (!session) return;
+
+      document.querySelectorAll("[data-filter]").forEach((btn) => {
+        btn.onclick = () => {
+          currentFilter = btn.getAttribute("data-filter") || "pending";
+          document.querySelectorAll("[data-filter]").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          loadIdeas();
+        };
+      });
+
+      document.getElementById("reloadIdeasBtn").onclick = () => {
+        loadIdeas();
+        toast("Список идей обновлён");
+      };
+
+      document.getElementById("eta24Btn").onclick = () => {
+        selectedEta = "2–4";
+        document.getElementById("eta24Btn").className = "btn-ice-sm btn-sm-act";
+        document.getElementById("eta57Btn").className = "btn-soft btn-sm-act";
+      };
+
+      document.getElementById("eta57Btn").onclick = () => {
+        selectedEta = "5–7";
+        document.getElementById("eta57Btn").className = "btn-ice-sm btn-sm-act";
+        document.getElementById("eta24Btn").className = "btn-soft btn-sm-act";
+      };
+
+      document.querySelectorAll("[data-star-preset]").forEach((b) => {
+        b.onclick = () => {
+          document.getElementById("acceptStarsInput").value = b.getAttribute("data-star-preset") || "0";
+        };
+      });
+
+      document.getElementById("closeAcceptModalBtn").onclick = () => {
+        document.getElementById("acceptIdeaBackdrop").classList.remove("open");
+      };
+      document.getElementById("acceptIdeaBackdrop").onclick = (e) => {
+        if (e.target.id === "acceptIdeaBackdrop") {
+          document.getElementById("acceptIdeaBackdrop").classList.remove("open");
+        }
+      };
+
+      document.getElementById("confirmAcceptIdeaBtn").onclick = async () => {
+        const starsVal = Math.max(0, Math.floor(Number(document.getElementById("acceptStarsInput").value || 0)));
+        const btn = document.getElementById("confirmAcceptIdeaBtn");
+        btn.disabled = true;
+        const out = await adminPost("/api/admin/ideas/review", {
+          idea_id: selectedIdeaId,
+          decision: "accepted",
+          stars_reward: starsVal,
+          eta_updates: selectedEta
+        });
+        btn.disabled = false;
+        if (out) {
+          document.getElementById("acceptIdeaBackdrop").classList.remove("open");
+          toast(starsVal > 0 ? `Идея принята (+${starsVal} ★)` : "Идея принята");
+          loadIdeas();
+        }
+      };
+
+      document.getElementById("closeRejectModalBtn").onclick = () => {
+        document.getElementById("rejectIdeaBackdrop").classList.remove("open");
+      };
+      document.getElementById("rejectIdeaBackdrop").onclick = (e) => {
+        if (e.target.id === "rejectIdeaBackdrop") {
+          document.getElementById("rejectIdeaBackdrop").classList.remove("open");
+        }
+      };
+
+      document.getElementById("confirmRejectIdeaBtn").onclick = async () => {
+        const reason = document.getElementById("rejectReasonInput").value.trim();
+        const btn = document.getElementById("confirmRejectIdeaBtn");
+        btn.disabled = true;
+        const out = await adminPost("/api/admin/ideas/review", {
+          idea_id: selectedIdeaId,
+          decision: "rejected",
+          reject_reason: reason
+        });
+        btn.disabled = false;
+        if (out) {
+          document.getElementById("rejectIdeaBackdrop").classList.remove("open");
+          toast("Идея отклонена");
+          loadIdeas();
+        }
+      };
+
+      loadIdeas();
+    })();
+  </script>
+</body>
+</html>
