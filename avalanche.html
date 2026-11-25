@@ -68,7 +68,7 @@
       justify-content: center;
       text-align: center;
       padding: 16px;
-      transition: border-color 0.45s ease, box-shadow 0.45s ease;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
     }
     .avalanche-arena.waiting {
       border-color: rgba(125, 211, 252, 0.42);
@@ -90,7 +90,7 @@
     .avalanche-arena.crashed {
       border-color: rgba(244, 63, 94, 0.85);
       box-shadow: inset 0 0 54px rgba(244, 63, 94, 0.38);
-      animation: avCrashShake 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+      animation: avCrashShake 0.42s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .avalanche-arena.won {
       border-color: rgba(52, 211, 153, 0.85);
@@ -104,7 +104,7 @@
       72% { transform: translate(4px, -2px); }
     }
 
-    /* Canvas восходящего снега и обвала */
+    /* Canvas графика подъёма, восходящего снега и обвала */
     #avSnowLiftCanvas {
       position: absolute;
       inset: 0;
@@ -121,14 +121,14 @@
       right: 0;
       bottom: 0;
       height: 100%;
-      background: linear-gradient(0deg, rgba(56, 189, 248, 0.22) 0%, rgba(125, 211, 252, 0.06) 45%, transparent 100%);
+      background: linear-gradient(0deg, rgba(56, 189, 248, 0.18) 0%, rgba(125, 211, 252, 0.04) 45%, transparent 100%);
       pointer-events: none;
       transform: translateY(100%);
-      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
       z-index: 1;
     }
 
-    /* Поток обвалившегося сверху снега при сходе лавины */
+    /* Поток обвалившегося сверху снега с плавной уборкой */
     .av-snow-collapse {
       position: absolute;
       inset: 0;
@@ -138,19 +138,20 @@
       transform: translateY(-100%);
       background: linear-gradient(
         180deg,
-        rgba(241, 245, 249, 0.78) 0%,
-        rgba(224, 242, 254, 0.45) 38%,
-        rgba(186, 230, 253, 0.14) 75%,
+        rgba(241, 245, 249, 0.72) 0%,
+        rgba(224, 242, 254, 0.38) 38%,
+        rgba(186, 230, 253, 0.1) 75%,
         transparent 100%
       );
-      transition: transform 0.52s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s ease;
     }
     .avalanche-arena.crashed .av-snow-collapse {
       opacity: 1;
       transform: translateY(0%);
+      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
     }
 
-    /* Пышные сугробы снизу после схода лавины */
+    /* Пышные многослойные сугробы с плавным таянием / уборкой вниз */
     .av-snowdrifts {
       position: absolute;
       left: -6%;
@@ -160,12 +161,14 @@
       pointer-events: none;
       z-index: 2;
       opacity: 0;
-      transform: translateY(100%) scaleY(0.82);
-      transition: transform 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.06s, opacity 0.38s ease;
+      transform: translateY(105%) scaleY(0.75);
+      transform-origin: bottom center;
+      transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.68s ease;
     }
     .avalanche-arena.crashed .av-snowdrifts {
       opacity: 1;
       transform: translateY(0%) scaleY(1);
+      transition: transform 0.44s cubic-bezier(0.16, 1, 0.3, 1) 0.04s, opacity 0.28s ease;
     }
     .av-snowdrifts svg {
       width: 100%;
@@ -219,7 +222,8 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       line-height: 1.02;
-      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      filter: drop-shadow(0 4px 16px rgba(7, 10, 18, 0.75));
     }
     .avalanche-arena.waiting .avalanche-mult {
       font-size: 58px;
@@ -535,6 +539,7 @@
       let roundPhase = "waiting"; // 'waiting' | 'running' | 'crashed'
       let activeRoundId = "";
       let currentMult = 0.0;
+      let currentFlightElapsed = 0.0;
       let crashMult = 1.0;
       let lastCountdownNum = null;
       let lastTickBucket = -1;
@@ -543,24 +548,17 @@
       let historyMults = [];
       let lastResetAt = 0;
       let realRoundPlayers = [];
+      let graphPoints = [];
 
       const myUser = tg?.initDataUnsafe?.user;
       const myUserId = Number(myUser?.id || 0);
       const myName = myUser?.username ? `@${myUser.username}` : (myUser?.first_name || "Игрок");
 
       /* =========================================================
-         1. ЧАСТОЕ И ОЩУТИМОЕ ПРОГРЕССИВНОЕ УСКОРЕНИЕ ОТ 0.00x
-         Старт плавный от 0.00x, и каждые 0.10–0.15x скорость прироста
-         заметно и плавно возрастает.
+         1. УСКОРЕННЫЙ РАЗГОН ОТ 0.00x (СОВПАДАЕТ С MAIN.PY)
       ========================================================= */
       function computeMultiplierAtElapsed(sec) {
         if (sec <= 0) return 0.0;
-        // t = 0..2s  -> 0.00x .. 0.24x (мягкий старт)
-        // t = 5s     -> 0.91x
-        // t = 8s     -> 2.14x
-        // t = 11s    -> 4.09x
-        // t = 14s    -> 6.96x
-        // t = 18s    -> 12.48x
         const val = 0.085 * sec + 0.014 * sec * sec + 0.0011 * sec * sec * sec;
         return Number(Math.min(100, val).toFixed(2));
       }
@@ -577,9 +575,6 @@
         return (lo + hi) * 0.5;
       }
 
-      /* =========================================================
-         2. УСЛОЖНЁННАЯ ВЕРОЯТНОСТЬ ИКСОВ (БОЛЬШИЕ ИКСЫ ВЫПАДАЮТ РЕЖЕ)
-      ========================================================= */
       function seededRand(seed) {
         const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
         return x - Math.floor(x);
@@ -587,16 +582,10 @@
 
       function computeFallbackCrash(seed) {
         const r = seededRand(seed);
-        // 16% шанс мгновенного краша на 0.00x
-        if (r < 0.16) return 0.00;
-        // 42% шанс раннего схода до 1.20x
-        if (r < 0.58) return Number((0.12 + seededRand(seed + 1) * 1.08).toFixed(2));
-        // 28% шанс среднего диапазона 1.20x .. 2.30x
-        if (r < 0.86) return Number((1.20 + seededRand(seed + 2) * 1.10).toFixed(2));
-        // 11% шанс повышенного 2.30x .. 5.00x
-        if (r < 0.97) return Number((2.30 + seededRand(seed + 3) * 2.70).toFixed(2));
-        // Лишь ~3% шанс на крупный икс 5.00x .. 15.00x
-        return Number((5.00 + seededRand(seed + 4) * 10.00).toFixed(2));
+        if (r < 0.14) return 0.00;
+        if (r < 0.72) return Number((1.05 + seededRand(seed + 1) * 0.94).toFixed(2));
+        if (r < 0.92) return Number((2.00 + seededRand(seed + 2) * 1.60).toFixed(2));
+        return Number((3.60 + seededRand(seed + 3) * 8.00).toFixed(2));
       }
 
       async function pollRealAvalancheState() {
@@ -636,10 +625,10 @@
       }
 
       pollRealAvalancheState();
-      setInterval(pollRealAvalancheState, 1500);
+      setInterval(pollRealAvalancheState, 1200);
 
       /* =========================================================
-         3. АНИМАЦИЯ СНЕГА: ПОДЪЁМ В РАУНДЕ И ОБВАЛ КОМЬЕВ ПРИ КРАШЕ
+         2. ИНТЕРАКТИВНЫЙ ГРАФИК ПОДЪЁМА + СНЕГ + ПЛАВНАЯ УБОРКА СУГРОБОВ
       ========================================================= */
       const liftCanvas = document.getElementById("avSnowLiftCanvas");
       const liftCtx = liftCanvas.getContext("2d");
@@ -670,10 +659,119 @@
           x: Math.random() * liftW,
           y: -15 - Math.random() * 90,
           r: 4 + Math.random() * 9,
-          vy: 180 + Math.random() * 240,
+          vy: 190 + Math.random() * 240,
           vx: -25 + Math.random() * 50,
-          alpha: 0.65 + Math.random() * 0.35
+          alpha: 0.85,
+          settled: false
         }));
+      }
+
+      function drawAscentGraph() {
+        if (graphPoints.length < 2 && roundPhase !== "running") return;
+
+        const padL = 16;
+        const padR = 26;
+        const padT = 38;
+        const padB = 22;
+        const plotW = Math.max(60, liftW - padL - padR);
+        const plotH = Math.max(60, liftH - padT - padB);
+
+        const maxT = Math.max(5.5, currentFlightElapsed * 1.12);
+        const maxM = Math.max(2.2, currentMult * 1.18);
+
+        // Тонкая горизонтальная сетка уровней (1.0x, 2.0x и т.д.)
+        liftCtx.save();
+        liftCtx.font = "700 10px -apple-system, sans-serif";
+        liftCtx.textAlign = "right";
+        const step = maxM > 6 ? 2 : 1;
+        for (let lvl = step; lvl < maxM; lvl += step) {
+          const gy = liftH - padB - (lvl / maxM) * plotH;
+          if (gy < padT + 4 || gy > liftH - padB - 4) continue;
+          liftCtx.strokeStyle = "rgba(148, 197, 255, 0.10)";
+          liftCtx.lineWidth = 1;
+          liftCtx.setLineDash([4, 4]);
+          liftCtx.beginPath();
+          liftCtx.moveTo(padL, gy);
+          liftCtx.lineTo(liftW - padR, gy);
+          liftCtx.stroke();
+
+          liftCtx.fillStyle = "rgba(140, 162, 194, 0.55)";
+          liftCtx.fillText(`${lvl.toFixed(1)}x`, liftW - 6, gy + 3);
+        }
+        liftCtx.setLineDash([]);
+
+        // Линия авто-выхода игрока, если включена
+        const targetAuto = autoCashEnabled ? Number(targetInput.value || 0) : 0;
+        if (targetAuto > 0 && targetAuto <= maxM && roundPhase === "running") {
+          const ay = liftH - padB - (targetAuto / maxM) * plotH;
+          liftCtx.strokeStyle = "rgba(52, 211, 153, 0.45)";
+          liftCtx.lineWidth = 1.2;
+          liftCtx.setLineDash([5, 3]);
+          liftCtx.beginPath();
+          liftCtx.moveTo(padL, ay);
+          liftCtx.lineTo(liftW - padR, ay);
+          liftCtx.stroke();
+          liftCtx.setLineDash([]);
+        }
+
+        if (graphPoints.length >= 2) {
+          const isCrash = roundPhase === "crashed";
+          const isWon = currentBet && currentBet.roundId === activeRoundId && currentBet.status === "won";
+
+          const pts = graphPoints.map((pt) => ({
+            x: padL + (pt.t / maxT) * plotW,
+            y: liftH - padB - (pt.m / maxM) * plotH
+          }));
+
+          // Градиентная заливка под графиком подъёма
+          const areaGrad = liftCtx.createLinearGradient(0, padT, 0, liftH - padB);
+          if (isCrash) {
+            areaGrad.addColorStop(0, "rgba(244, 63, 94, 0.30)");
+            areaGrad.addColorStop(1, "rgba(244, 63, 94, 0.0)");
+          } else if (isWon) {
+            areaGrad.addColorStop(0, "rgba(52, 211, 153, 0.32)");
+            areaGrad.addColorStop(1, "rgba(52, 211, 153, 0.0)");
+          } else {
+            areaGrad.addColorStop(0, "rgba(56, 189, 248, 0.34)");
+            areaGrad.addColorStop(1, "rgba(56, 189, 248, 0.0)");
+          }
+
+          liftCtx.beginPath();
+          liftCtx.moveTo(pts[0].x, liftH - padB);
+          for (const p of pts) liftCtx.lineTo(p.x, p.y);
+          liftCtx.lineTo(pts[pts.length - 1].x, liftH - padB);
+          liftCtx.closePath();
+          liftCtx.fillStyle = areaGrad;
+          liftCtx.fill();
+
+          // Неоновая кривая подъёма
+          liftCtx.beginPath();
+          liftCtx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) {
+            liftCtx.lineTo(pts[i].x, pts[i].y);
+          }
+          liftCtx.strokeStyle = isCrash ? "#fb7185" : (isWon ? "#34d399" : "#38bdf8");
+          liftCtx.lineWidth = 3;
+          liftCtx.lineCap = "round";
+          liftCtx.lineJoin = "round";
+          liftCtx.shadowColor = isCrash ? "rgba(244, 63, 94, 0.7)" : "rgba(56, 189, 248, 0.85)";
+          liftCtx.shadowBlur = 12;
+          liftCtx.stroke();
+          liftCtx.shadowBlur = 0;
+
+          // Светящийся маркер вершины лавины
+          const tip = pts[pts.length - 1];
+          liftCtx.beginPath();
+          liftCtx.arc(tip.x, tip.y, 7.5, 0, Math.PI * 2);
+          liftCtx.fillStyle = isCrash ? "rgba(244, 63, 94, 0.28)" : "rgba(125, 211, 252, 0.32)";
+          liftCtx.fill();
+
+          liftCtx.beginPath();
+          liftCtx.arc(tip.x, tip.y, 4, 0, Math.PI * 2);
+          liftCtx.fillStyle = "#ffffff";
+          liftCtx.fill();
+        }
+        liftCtx.restore();
       }
 
       let smoothLiftFactor = 0.25;
@@ -685,23 +783,18 @@
 
         liftCtx.clearRect(0, 0, liftW, liftH);
 
+        // Отрисовка интерактивного графика подъёма во время раунда и краша
+        if (roundPhase === "running" || roundPhase === "crashed") {
+          drawAscentGraph();
+        }
+
         let targetLift = 0.25;
         if (roundPhase === "running") {
-          targetLift = 0.85 + Math.min(6.5, currentMult * 0.65);
+          targetLift = 0.95 + Math.min(6.8, currentMult * 0.7);
         } else if (roundPhase === "crashed") {
           targetLift = -2.2;
         }
-        smoothLiftFactor += (targetLift - smoothLiftFactor) * Math.min(1, dt * 3.4);
-
-        if (roundPhase === "running") {
-          const beamAlpha = Math.min(0.24, 0.04 + currentMult * 0.015);
-          const grad = liftCtx.createLinearGradient(0, liftH, 0, 0);
-          grad.addColorStop(0, `rgba(56, 189, 248, ${beamAlpha})`);
-          grad.addColorStop(0.55, `rgba(129, 140, 248, ${beamAlpha * 0.45})`);
-          grad.addColorStop(1, "rgba(56, 189, 248, 0)");
-          liftCtx.fillStyle = grad;
-          liftCtx.fillRect(0, 0, liftW, liftH);
-        }
+        smoothLiftFactor += (targetLift - smoothLiftFactor) * Math.min(1, dt * 3.6);
 
         const timeSec = now / 1000;
         for (const p of snowParticles) {
@@ -734,19 +827,31 @@
           }
         }
 
-        if (roundPhase === "crashed" && crashClumps.length > 0) {
+        // Падение комьев снега и их плавное таяние/уборка при смене фазы
+        if (crashClumps.length > 0) {
           for (const c of crashClumps) {
-            c.y += c.vy * dt;
-            c.x += c.vx * dt;
-            if (c.y > liftH - 18) {
-              c.y = liftH - 18;
-              c.vy = 0;
-              c.vx = 0;
+            if (roundPhase === "crashed") {
+              c.y += c.vy * dt;
+              c.x += c.vx * dt;
+              if (c.y >= liftH - 16) {
+                c.y = liftH - 16;
+                c.vy = 0;
+                c.vx = 0;
+              }
+            } else {
+              // Плавная уборка снега вниз и растворение в начале нового раунда
+              c.y += 42 * dt;
+              c.alpha = Math.max(0, c.alpha - 1.6 * dt);
             }
-            liftCtx.beginPath();
-            liftCtx.fillStyle = `rgba(248, 250, 252, ${c.alpha})`;
-            liftCtx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
-            liftCtx.fill();
+            if (c.alpha > 0.01) {
+              liftCtx.beginPath();
+              liftCtx.fillStyle = `rgba(248, 250, 252, ${c.alpha})`;
+              liftCtx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+              liftCtx.fill();
+            }
+          }
+          if (roundPhase !== "crashed" && crashClumps.every((c) => c.alpha <= 0.01)) {
+            crashClumps = [];
           }
         }
 
@@ -755,7 +860,7 @@
       requestAnimationFrame(renderSnowLift);
 
       /* =========================================================
-         4. ОТРИСОВКА ИСТОРИИ И СПИСКА ТОЛЬКО РЕАЛЬНЫХ ИГРОКОВ
+         3. ОТРИСОВКА ИСТОРИИ И СПИСКА ТОЛЬКО РЕАЛЬНЫХ ИГРОКОВ
       ========================================================= */
       function renderHistoryBar() {
         if (!historyMults.length) {
@@ -851,7 +956,7 @@
       }
 
       /* =========================================================
-         5. БЛОКИРОВКА СТАВКИ И КНОПКА «Ожидание раунда»
+         4. БЛОКИРОВКА СТАВКИ И МГНОВЕННЫЙ ВЫВОД БЕЗ ЗАДЕРЖЕК
       ========================================================= */
       function setControlsLocked(locked) {
         betInput.disabled = locked;
@@ -882,11 +987,10 @@
         }
 
         if (roundPhase === "running" && isPlayingNow) {
-          const livePayout = Math.floor(currentBet.bet * currentMult);
-          btnAction.disabled = cashingOut || currentMult <= 0.01;
+          const livePayout = Math.max(1, Math.round(currentBet.bet * currentMult));
+          btnAction.disabled = cashingOut || currentMult < 0.05;
           btnAction.className = "btn-main cashout-green-btn";
-          btnAction.textContent = cashingOut
-            : `Забрать (${livePayout} ★ · ${currentMult.toFixed(2)}x)`;
+          btnAction.textContent = `Забрать (${livePayout} ★ · ${currentMult.toFixed(2)}x)`;
           return;
         }
 
@@ -1001,13 +1105,22 @@
 
       async function performCashout(multToClaim) {
         if (cashingOut || !currentBet || currentBet.status !== "playing") return;
-        if (multToClaim <= 0.01) return;
+        if (multToClaim < 0.05) return;
 
         cashingOut = true;
-        syncControlsAndButton();
-
         const claimMult = Number(multToClaim.toFixed(2));
         const estPayout = Math.max(1, Math.round(currentBet.bet * claimMult));
+
+        // Мгновенная реакция UI без задержки «Забираем...»
+        currentBet.status = "won";
+        currentBet.cashoutMult = claimMult;
+        currentBet.payout = estPayout;
+        arena.classList.add("won");
+        statusEl.textContent = `Вы забрали +${estPayout} ★ на ${claimMult.toFixed(2)}x!`;
+        playWin();
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+        renderPlayersList();
+        syncControlsAndButton();
 
         try {
           const r = await fetch(apiUrl("/api/avalanche_cashout"), {
@@ -1023,7 +1136,12 @@
           cashingOut = false;
 
           if (!d.ok) {
+            currentBet.status = "lost";
+            currentBet.cashoutMult = 0;
+            currentBet.payout = 0;
+            arena.classList.remove("won");
             toast(d.message || "Не успел забрать до схода");
+            renderPlayersList();
             syncControlsAndButton();
             return;
           }
@@ -1034,22 +1152,15 @@
           updateStarsDisplay(appState.stars_balance);
           saveCache(appState);
 
-          currentBet.status = "won";
           currentBet.cashoutMult = Number(d.mult || claimMult);
           currentBet.payout = Number(d.payout || estPayout);
-
-          arena.classList.add("won");
           statusEl.textContent = `Вы забрали +${currentBet.payout} ★ на ${currentBet.cashoutMult.toFixed(2)}x!`;
-          playWin();
-          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
           toast(`Забрано ${currentBet.cashoutMult.toFixed(2)}x (+${currentBet.payout} ★)!`);
-
           renderPlayersList();
-          syncControlsAndButton();
           pollRealAvalancheState();
         } catch (_) {
           cashingOut = false;
-          toast("Ошибка сети");
+          toast("Ошибка сети при выводе");
           syncControlsAndButton();
         }
       }
@@ -1085,11 +1196,11 @@
       };
 
       /* =========================================================
-         6. ГЛАВНЫЙ ЦИКЛ ОБЩЕГО РАУНДА
+         5. ГЛАВНЫЙ ЦИКЛ ОБЩЕГО РАУНДА (КОРОТКИЙ ПЕРЕРЫВ МЕЖДУ РАУНДАМИ)
       ========================================================= */
       const WAIT_SEC = 5.0;
-      const CRASH_PAUSE_SEC = 3.0;
-      const SLOT_LEN = 24.0;
+      const CRASH_PAUSE_SEC = 1.6;
+      const SLOT_LEN = 21.0;
       let prevEpochIdx = -1;
 
       function tickSharedRound() {
@@ -1097,8 +1208,8 @@
         const epochIdx = Math.floor(nowSec / SLOT_LEN);
         const slotOffset = nowSec - epochIdx * SLOT_LEN;
 
-        const rId = serverAvalancheData?.round_id || `round_${epochIdx}`;
-        const rawCrash = typeof serverAvalancheData?.crash_mult === "number"
+        const rId = `round_${epochIdx}`;
+        const rawCrash = (serverAvalancheData?.round_id === rId && typeof serverAvalancheData?.crash_mult === "number")
           ? Number(serverAvalancheData.crash_mult)
           : computeFallbackCrash(epochIdx);
 
@@ -1116,7 +1227,7 @@
           lastCountdownNum = null;
           lastTickBucket = -1;
           realRoundPlayers = [];
-          crashClumps = [];
+          graphPoints = [];
 
           if (currentBet && currentBet.roundId !== rId) {
             currentBet = null;
@@ -1136,6 +1247,8 @@
         if (slotOffset < WAIT_SEC) {
           roundPhase = "waiting";
           currentMult = 0.0;
+          currentFlightElapsed = 0.0;
+          graphPoints = [];
           const left = Math.max(0.01, WAIT_SEC - slotOffset);
           const countNum = Math.ceil(left);
 
@@ -1162,11 +1275,20 @@
 
         countdownTrack.style.display = "none";
 
-        // ФАЗА 2: АКТИВНЫЙ РАУНД (ЧАСТОЕ УСКОРЕНИЕ КАЖДЫЕ 0.10–0.20x ОТ 0.00x)
+        // ФАЗА 2: АКТИВНЫЙ РАУНД (ГРАФИК ПОДЪЁМА + УСКОРЕНИЕ)
         const flightElapsed = slotOffset - WAIT_SEC;
         if (flightElapsed < activeFlightLen && effectiveCrash > 0) {
           roundPhase = "running";
+          currentFlightElapsed = flightElapsed;
           currentMult = computeMultiplierAtElapsed(flightElapsed);
+
+          if (graphPoints.length === 0) {
+            graphPoints.push({ t: 0, m: 0 });
+          }
+          const lastPt = graphPoints[graphPoints.length - 1];
+          if (flightElapsed - lastPt.t >= 0.05) {
+            graphPoints.push({ t: flightElapsed, m: currentMult });
+          }
 
           const hasWon = currentBet && currentBet.roundId === rId && currentBet.status === "won";
           arena.className = `avalanche-arena running${hasWon ? " won" : ""}${currentMult >= 2.2 ? " danger" : ""}`;
@@ -1183,9 +1305,10 @@
             statusEl.textContent = "Раунд идёт · ставка сейчас пойдёт на следующий раунд";
           }
 
-          const waveRise = Math.max(10, 96 - currentMult * 11);
+          const waveRise = Math.max(12, 96 - currentMult * 11);
           waveEl.style.transform = `translateY(${waveRise}%)`;
 
+          // Мгновенный авто-выход
           if (
             currentBet &&
             currentBet.roundId === rId &&
@@ -1245,8 +1368,8 @@
         stageLabelEl.textContent = effectiveCrash <= 0 ? "МГНОВЕННЫЙ СХОД" : "ЛАВИНА СОШЛА";
         multEl.textContent = `${effectiveCrash.toFixed(2)}x`;
         statusEl.textContent = effectiveCrash <= 0
-          ? "Лавина обрушилась на 0.00x! Новый раунд через пару секунд..."
-          : `Снег накрыл арену на ${effectiveCrash.toFixed(2)}x · можно ставить на новый раунд`;
+          ? "Лавина обрушилась на 0.00x! Новый раунд через секунду..."
+          : `Снег накрыл арену на ${effectiveCrash.toFixed(2)}x · можно ставить`;
 
         syncControlsAndButton();
         requestAnimationFrame(tickSharedRound);
