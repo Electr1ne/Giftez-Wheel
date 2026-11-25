@@ -119,7 +119,7 @@
     </div>
   </div>
 
-  <!-- Модалка принятия идеи (выбор срока обновлений и награды в ★) -->
+  <!-- Модалка принятия идеи -->
   <div class="backdrop" id="acceptIdeaBackdrop">
     <div class="wallet-sheet">
       <div class="card-head">
@@ -150,7 +150,7 @@
     </div>
   </div>
 
-  <!-- Модалка отклонения идеи (опциональная причина) -->
+  <!-- Модалка отклонения идеи -->
   <div class="backdrop" id="rejectIdeaBackdrop">
     <div class="wallet-sheet">
       <div class="card-head">
@@ -165,6 +165,30 @@
       <textarea class="broadcast-area" id="rejectReasonInput" rows="3" maxlength="400" placeholder="Причина отказа (оставь пустым, чтобы отклонить без причины)"></textarea>
 
       <button type="button" class="btn-red-sm" id="confirmRejectIdeaBtn" style="height:44px;min-height:44px;">Отклонить идею</button>
+    </div>
+  </div>
+
+  <!-- Модалка выбора режима удаления идеи -->
+  <div class="backdrop" id="deleteIdeaBackdrop">
+    <div class="wallet-sheet">
+      <div class="card-head">
+        <h2 id="deleteModalTitle">Удалить идею</h2>
+        <button type="button" class="btn-mini-refresh" id="closeDeleteModalBtn">Закрыть</button>
+      </div>
+
+      <div class="note-box">
+        Выбери, откуда убрать эту заявку:
+      </div>
+
+      <button type="button" class="btn-soft" id="delScopeAdminBtn" style="height:42px;min-height:42px;">
+        Только из админки (у игрока останется)
+      </button>
+      <button type="button" class="btn-soft" id="delScopeUserBtn" style="height:42px;min-height:42px;">
+        Только у игрока (в админке останется)
+      </button>
+      <button type="button" class="btn-red-sm" id="delScopeBothBtn" style="height:44px;min-height:44px;">
+        Удалить полностью из базы (у обоих)
+      </button>
     </div>
   </div>
 
@@ -227,6 +251,39 @@
         document.getElementById("rejectIdeaBackdrop").classList.add("open");
       }
 
+      function openDeleteModal(ideaId, isHiddenForUser) {
+        selectedIdeaId = Number(ideaId);
+        document.getElementById("deleteModalTitle").textContent = `Удаление идеи #${selectedIdeaId}`;
+        const userBtn = document.getElementById("delScopeUserBtn");
+        if (isHiddenForUser) {
+          userBtn.disabled = true;
+          userBtn.textContent = "Уже скрыто у игрока";
+        } else {
+          userBtn.disabled = false;
+          userBtn.textContent = "Только у игрока (в админке останется)";
+        }
+        document.getElementById("deleteIdeaBackdrop").classList.add("open");
+      }
+
+      async function executeDeleteScope(scope) {
+        const btns = [
+          document.getElementById("delScopeAdminBtn"),
+          document.getElementById("delScopeUserBtn"),
+          document.getElementById("delScopeBothBtn")
+        ];
+        btns.forEach((b) => (b.disabled = true));
+        const out = await adminPost("/api/admin/ideas/delete", {
+          idea_id: selectedIdeaId,
+          scope
+        });
+        btns.forEach((b) => (b.disabled = false));
+        if (out) {
+          document.getElementById("deleteIdeaBackdrop").classList.remove("open");
+          toast(out.message || "Готово");
+          loadIdeas();
+        }
+      }
+
       async function loadIdeas() {
         const stack = document.getElementById("adminIdeasStack");
         const d = await adminPost("/api/admin/ideas", { status: currentFilter });
@@ -246,6 +303,7 @@
             if (st === "rejected") badgeText = "Отклонено";
 
             const authorStr = item.username ? `@${escapeHtml(item.username)}` : "Без username";
+            const hiddenUserTag = Number(item.hidden_user || 0) === 1 ? ` · <span style="color:#fda4af;">скрыто у игрока</span>` : "";
 
             let footerHtml = "";
             if (st === "pending") {
@@ -273,7 +331,7 @@
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
                   <div>
                     <div class="row-title">#${Number(item.id)} · ${escapeHtml(item.theme)}</div>
-                    <div class="row-sub">${authorStr} · ID ${Number(item.user_id)} · ${formatDate(item.created_at)}</div>
+                    <div class="row-sub">${authorStr} · ID ${Number(item.user_id)} · ${formatDate(item.created_at)}${hiddenUserTag}</div>
                   </div>
                   <span class="idea-badge ${escapeHtml(st)}">${badgeText}</span>
                 </div>
@@ -289,6 +347,10 @@
                 </div>
 
                 ${footerHtml}
+
+                <button type="button" class="btn-red-sm btn-sm-act" style="width:100%;" data-del-modal="${item.id}" data-hidden-user="${Number(item.hidden_user || 0)}">
+                  Удалить идею…
+                </button>
               </div>
             `;
           })
@@ -335,6 +397,14 @@
 
         stack.querySelectorAll("[data-rej-modal]").forEach((btn) => {
           btn.onclick = () => openRejectModal(btn.getAttribute("data-rej-modal"));
+        });
+
+        stack.querySelectorAll("[data-del-modal]").forEach((btn) => {
+          btn.onclick = () => {
+            const id = btn.getAttribute("data-del-modal");
+            const isHiddenU = Number(btn.getAttribute("data-hidden-user") || 0) === 1;
+            openDeleteModal(id, isHiddenU);
+          };
         });
       }
 
@@ -428,6 +498,19 @@
           loadIdeas();
         }
       };
+
+      document.getElementById("closeDeleteModalBtn").onclick = () => {
+        document.getElementById("deleteIdeaBackdrop").classList.remove("open");
+      };
+      document.getElementById("deleteIdeaBackdrop").onclick = (e) => {
+        if (e.target.id === "deleteIdeaBackdrop") {
+          document.getElementById("deleteIdeaBackdrop").classList.remove("open");
+        }
+      };
+
+      document.getElementById("delScopeAdminBtn").onclick = () => executeDeleteScope("admin");
+      document.getElementById("delScopeUserBtn").onclick = () => executeDeleteScope("user");
+      document.getElementById("delScopeBothBtn").onclick = () => executeDeleteScope("both");
 
       loadIdeas();
     })();
