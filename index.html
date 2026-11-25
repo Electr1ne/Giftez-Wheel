@@ -108,20 +108,6 @@
         const pct = Math.min(100, Math.round((pts / Math.max(1, maxPts)) * 100));
         const canClaim = Boolean(nextStage && pts >= nextStage.points && isUnlocked && snowflakesEnabled);
 
-        let statusChipText = "АКТИВЕН";
-        if (!snowflakesEnabled) {
-          statusChipText = "СНЕЖИНКИ ЗАКРЫТЫ";
-        } else if (isBeforeOfficialStart) {
-          statusChipText = `1 дек · ${formatCountdown(startTs - now)}`;
-        }
-
-        let descText = "1 снежинка за каждые 2 ★ оборота в кейсах, апгрейдере и «Лавине». Копи снежинки и забирай бонусы!";
-        if (!snowflakesEnabled) {
-          descText = "Начисление снежинок временно закрыто администратором до официального старта. Все игры и кейсы доступны!";
-        } else if (isBeforeOfficialStart) {
-          descText = "1 декабря в 00:00 МСК появятся новые зимние кейсы (до 150 ★), «Тонкий лёд» и игра «Лавина».";
-        }
-
         host.innerHTML = `
           <div class="event-banner-card fade-in">
             <div class="event-top-row">
@@ -130,11 +116,15 @@
                 ${isBeforeOfficialStart && isUnlocked ? `<span class="pill-gold-sm">ПРЕВЬЮ</span>` : ""}
               </div>
               <span class="event-timer-chip" id="eventCountdownChip">
-                ${statusChipText}
+                ${isBeforeOfficialStart ? `1 дек · ${formatCountdown(startTs - now)}` : "АКТИВЕН"}
               </span>
             </div>
 
-            <div class="event-desc">${descText}</div>
+            <div class="event-desc">
+              ${isBeforeOfficialStart
+                ? "1 декабря в 00:00 МСК появятся новые зимние кейсы (до 150 ★), «Тонкий лёд» и игра «Лавина»."
+                : "1 снежинка за каждые 2 ★ оборота в кейсах, апгрейдере и «Лавине». Копи снежинки и забирай бонусы!"}
+            </div>
 
             ${isUnlocked ? `
               <div class="ice-progress-wrap">
@@ -306,8 +296,7 @@
           const now = Math.floor(Date.now() / 1000);
           const startTs = Number(appState.event_start_ts || 1796072400);
           const chip = document.getElementById("eventCountdownChip");
-          const snowOn = (appState.system_modes || {}).event_snowflakes_enabled !== false;
-          if (chip && snowOn && now < startTs) {
+          if (chip && now < startTs) {
             chip.textContent = `1 дек · ${formatCountdown(startTs - now)}`;
           }
           const avBadge = document.getElementById("avalancheTileBadge");

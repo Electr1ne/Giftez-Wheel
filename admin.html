@@ -6,225 +6,291 @@
   <title>GiftezUp — Админ-панель</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
+  <style>
+    .adm-tabs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      padding: 4px;
+      border-radius: 15px;
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+    }
+    .adm-tab-btn {
+      height: 36px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.16s ease;
+    }
+    .adm-tab-btn.active {
+      background: var(--ice-soft);
+      border-color: var(--ice-border);
+      color: var(--ice-bright);
+    }
+    .adm-badge-cnt {
+      padding: 1px 5px;
+      border-radius: 99px;
+      background: rgba(251, 191, 36, 0.2);
+      color: #fde047;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .adm-pane {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .adm-pane.active {
+      display: flex;
+    }
+    .compact-card {
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .compact-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .compact-head h3 {
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .compact-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+    }
+    .compact-row .row-title {
+      font-size: 12.5px;
+    }
+    .compact-row .row-sub {
+      font-size: 10.5px;
+    }
+    .field-sm {
+      height: 39px;
+      min-height: 39px;
+      font-size: 13px;
+      padding: 0 10px;
+    }
+    .btn-sm-act {
+      height: 36px;
+      min-height: 36px;
+      font-size: 12px;
+      padding: 0 10px;
+    }
+  </style>
 </head>
 <body>
   <div class="app">
     <div id="headerMount"></div>
 
-    <!-- Переключатель дизайна (только для админа / для всех игроков) -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Версия дизайна и ивента</h2>
-        <span class="pill-ice">UI SWITCH</span>
-      </div>
-      <div class="note-box">
-        Новые зимние кейсы скрыты для игроков до <b>1 декабря 00:00 МСК</b>. В твоём виде <b>v2</b> они видны заранее для проверки.
-      </div>
-
-      <div class="list-row">
-        <div>
-          <div class="row-title">Мой вид (Админ)</div>
-          <div class="row-sub">Тестируй v2 до запуска для всех</div>
-        </div>
-        <button type="button" class="btn-ice-sm" id="btnUiAdminVer">v2</button>
-      </div>
-
-      <div class="list-row">
-        <div>
-          <div class="row-title">Дизайн для всех игроков</div>
-          <div class="row-sub">Публичная версия витрины</div>
-        </div>
-        <button type="button" class="btn-soft" id="btnUiPublicVer">v1</button>
-      </div>
-    </div>
-
-    <!-- Управление ивентом «Снегопад» и сброс истории перед 1 декабря -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Ивент «Снегопад» и история</h2>
-        <span class="pill-ice">ИВЕНТ</span>
-      </div>
-
-      <div class="list-row">
-        <div>
-          <div class="row-title">Начисление снежинок</div>
-          <div class="row-sub">Если закрыто — игры работают, но снежинки не капают</div>
-        </div>
-        <button type="button" class="btn-ice-sm" id="btnToggleSnowflakes">Загрузка...</button>
-      </div>
-
-      <div class="note-box">
-        Перед официальным запуском 1 декабря можно очистить тестовую историю игр и сбросить прогресс снежинок.
-      </div>
-
-      <button type="button" class="btn-red-sm" id="admResetGamesHistoryBtn" style="width:100%;">
-        Сбросить историю игр (Лавина / лента)
+    <!-- Компактная навигация по разделам админки -->
+    <div class="adm-tabs-grid fade-in" id="admTabsBar">
+      <button type="button" class="adm-tab-btn active" data-adm-tab="players">Игроки</button>
+      <button type="button" class="adm-tab-btn" data-adm-tab="event">Ивент</button>
+      <button type="button" class="adm-tab-btn" data-adm-tab="reqs">
+        <span>Выводы</span>
+        <span class="adm-badge-cnt" id="admReqsCountBadge" style="display:none;">0</span>
       </button>
-
-      <input type="text" class="field-input" id="admEventUserInput" placeholder="@username игрока для сброса снежинок" />
-      <div class="grid-2">
-        <button type="button" class="btn-soft" id="admResetEventOneBtn">Сброс игроку</button>
-        <button type="button" class="btn-red-sm" id="admResetEventAllBtn">Сброс ВСЕМ</button>
-      </div>
+      <button type="button" class="adm-tab-btn" data-adm-tab="system">Система</button>
     </div>
 
-    <!-- Выдача бесплатных открытий кейсов по @username -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Выдача кейсов игроку</h2>
-        <span class="pill-ice">FREE OPENS</span>
-      </div>
-      <div class="note-box">
-        Начисляет бесплатные открытия выбранного кейса по <b>@username</b>.
-      </div>
-      <input type="text" class="field-input" id="admFreeCaseUser" placeholder="@username игрока" />
-      <select class="field-input" id="admFreeCaseSelect">
-        <option value="starter">Стартовый (5 ★)</option>
-        <option value="morozniy">Морозный (12 ★)</option>
-        <option value="sever">Северный (25 ★)</option>
-        <option value="newyear">Новогодний (50 ★)</option>
-        <option value="iney">Иней (3 ★)</option>
-        <option value="icicle">Сосулька (8 ★)</option>
-        <option value="ldinka">Льдинка (10 ★)</option>
-        <option value="first_snow">Первый снег (15 ★)</option>
-        <option value="snow_chest">Снежный сундук (20 ★)</option>
-        <option value="blizzard">Метель (35 ★)</option>
-        <option value="winter_safe">Зимний сейф (45 ★)</option>
-        <option value="pre_newyear">Предновогодний (60 ★)</option>
-        <option value="abs_zero">Абсолютный ноль (75 ★)</option>
-        <option value="winter_crown">Корона зимы (100 ★)</option>
-        <option value="ice_throne">Ледяной трон (150 ★)</option>
-        <option value="thin_ice">Тонкий лёд (50 ★)</option>
-      </select>
-      <input type="number" class="field-input" id="admFreeCaseCount" min="1" max="500" value="1" placeholder="Количество открытий (шт.)" />
-      <div class="grid-2">
-        <button type="button" class="btn-ice-sm" id="admGiveFreeCaseBtn">Выдать кейсы</button>
-        <button type="button" class="btn-red-sm" id="admTakeFreeCaseBtn">Списать кейсы</button>
-      </div>
-    </div>
-
-    <!-- Создание промокода (на звёзды или на бесплатные открытия кейсов) -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Создать промокод</h2>
-        <span class="pill-ice">PROMO</span>
-      </div>
-      <input type="text" class="field-input" id="admPromoCode" placeholder="Код (например: WINTER26)" />
-
-      <div class="grid-2">
-        <button type="button" class="btn-ice-sm" id="admPromoTypeStarsBtn">Награда: Звёзды ★</button>
-        <button type="button" class="btn-soft" id="admPromoTypeCaseBtn">Награда: Кейс</button>
+    <!-- ВКЛАДКА 1: ИГРОКИ, КЕЙСЫ И ПРОМОКОДЫ -->
+    <div class="adm-pane active fade-in" id="pane-players">
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Баланс и 24ч таймер</h3>
+          <span class="pill-ice">STARS</span>
+        </div>
+        <div class="grid-2">
+          <input type="text" class="field-input field-sm" id="admTargetUser" placeholder="@username" />
+          <input type="number" class="field-input field-sm" id="admTargetStars" placeholder="Звёзд (★)" />
+        </div>
+        <div class="grid-2">
+          <button type="button" class="btn-ice-sm btn-sm-act" id="admGiveBtn">+ Выдать ★</button>
+          <button type="button" class="btn-red-sm btn-sm-act" id="admTakeBtn">- Списать ★</button>
+        </div>
+        <div class="grid-2">
+          <button type="button" class="btn-soft btn-sm-act" id="admResetOneBtn">Сброс 24ч игроку</button>
+          <button type="button" class="btn-soft btn-sm-act" id="admResetAllBtn">Сброс 24ч ВСЕМ</button>
+        </div>
       </div>
 
-      <div id="admPromoCaseWrap" style="display:none;">
-        <select class="field-input" id="admPromoCaseSelect">
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Бесплатные открытия кейсов</h3>
+          <span class="pill-ice">FREE OPENS</span>
+        </div>
+        <div class="grid-2">
+          <input type="text" class="field-input field-sm" id="admFreeCaseUser" placeholder="@username" />
+          <input type="number" class="field-input field-sm" id="admFreeCaseCount" min="1" max="500" value="1" placeholder="Штук" />
+        </div>
+        <select class="field-input field-sm" id="admFreeCaseSelect">
           <option value="starter">Стартовый (5 ★)</option>
           <option value="morozniy">Морозный (12 ★)</option>
           <option value="sever">Северный (25 ★)</option>
           <option value="newyear">Новогодний (50 ★)</option>
-          <option value="iney">Иней (3 ★)</option>
-          <option value="icicle">Сосулька (8 ★)</option>
-          <option value="ldinka">Льдинка (10 ★)</option>
-          <option value="first_snow">Первый снег (15 ★)</option>
-          <option value="snow_chest">Снежный сундук (20 ★)</option>
-          <option value="blizzard">Метель (35 ★)</option>
-          <option value="winter_safe">Зимний сейф (45 ★)</option>
-          <option value="pre_newyear">Предновогодний (60 ★)</option>
-          <option value="abs_zero">Абсолютный ноль (75 ★)</option>
-          <option value="winter_crown">Корона зимы (100 ★)</option>
-          <option value="ice_throne">Ледяной трон (150 ★)</option>
-          <option value="thin_ice">Тонкий лёд (50 ★)</option>
         </select>
-      </div>
-
-      <div class="grid-2">
-        <input type="number" class="field-input" id="admPromoAmountPerUser" min="1" placeholder="Кол-во на 1 акт. (★ / шт.)" />
-        <input type="number" class="field-input" id="admPromoUses" min="1" placeholder="Всего активаций" />
-      </div>
-      <button type="button" class="btn-main" id="admPromoCreateBtn">Создать промокод</button>
-    </div>
-
-    <!-- Управление запасом лимитированных кейсов -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Запас лимитных кейсов</h2>
-        <span class="pill-ice">ЛИМИТКИ</span>
-      </div>
-      <div class="note-box" id="stockStatusBox">
-        Выбери лимитированный кейс. «Пополнить остаток» возвращает доступные штуки в пределах исходного лимита.
-      </div>
-      <select class="field-input" id="admStockCaseSelect">
-        <option value="snow_chest">Снежный сундук (20 ★)</option>
-        <option value="winter_safe">Зимний сейф (45 ★)</option>
-        <option value="winter_crown">Корона зимы (100 ★)</option>
-        <option value="ice_throne">Ледяной трон (150 ★)</option>
-        <option value="thin_ice">Тонкий лёд (50 ★)</option>
-      </select>
-      <input type="number" class="field-input" id="admStockAmountInput" min="1" value="10" placeholder="Количество штук" />
-      <div class="grid-2">
-        <button type="button" class="btn-ice-sm" id="admRestockAddBtn">Пополнить остаток</button>
-        <button type="button" class="btn-soft" id="admStockSetTotalBtn">Задать общий лимит</button>
-      </div>
-    </div>
-
-    <!-- Раздельные тумблеры техработ и обновления -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Режимы доступа</h2>
-        <span class="pill-ice">ADMIN</span>
-      </div>
-
-      <div class="list-row">
-        <div>
-          <div class="row-title">Техработы</div>
-          <div class="row-sub">Исправление ошибок и улучшения</div>
+        <div class="grid-2">
+          <button type="button" class="btn-ice-sm btn-sm-act" id="admGiveFreeCaseBtn">+ Выдать кейсы</button>
+          <button type="button" class="btn-red-sm btn-sm-act" id="admTakeFreeCaseBtn">- Списать кейсы</button>
         </div>
-        <button type="button" class="btn-soft" id="btnModeMaint">Загрузка...</button>
       </div>
 
-      <div class="list-row">
-        <div>
-          <div class="row-title">Обновление</div>
-          <div class="row-sub">Полноценная выкатка обновления</div>
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Создать промокод</h3>
+          <span class="pill-ice">PROMO</span>
         </div>
-        <button type="button" class="btn-soft" id="btnModeUpd">Загрузка...</button>
+        <div class="grid-2">
+          <button type="button" class="btn-ice-sm btn-sm-act" id="admPromoTypeStarsBtn">Тип: Звёзды ★</button>
+          <button type="button" class="btn-soft btn-sm-act" id="admPromoTypeCaseBtn">Тип: Кейс</button>
+        </div>
+        <input type="text" class="field-input field-sm" id="admPromoCode" placeholder="Код (напр. WINTER26)" />
+        <div id="admPromoCaseWrap" style="display:none;">
+          <select class="field-input field-sm" id="admPromoCaseSelect">
+            <option value="starter">Стартовый (5 ★)</option>
+          </select>
+        </div>
+        <div class="grid-2">
+          <input type="number" class="field-input field-sm" id="admPromoAmountPerUser" min="1" placeholder="За 1 акт. (★ / шт.)" />
+          <input type="number" class="field-input field-sm" id="admPromoUses" min="1" placeholder="Лимит акт." />
+        </div>
+        <button type="button" class="btn-main btn-sm-act" id="admPromoCreateBtn">Создать промокод</button>
       </div>
     </div>
 
-    <!-- Управление звёздами игрока по @username -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Баланс звёзд игрока</h2>
+    <!-- ВКЛАДКА 2: ИВЕНТ «СНЕГОПАД», ИСТОРИЯ И ЛИМИТКИ -->
+    <div class="adm-pane fade-in" id="pane-event">
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Ивент «Снегопад»</h3>
+          <span class="pill-ice">EVENT</span>
+        </div>
+
+        <div class="compact-row">
+          <div>
+            <div class="row-title">Начисление снежинок</div>
+            <div class="row-sub">Скрытый тумблер: если закрыто, снежинки не капают</div>
+          </div>
+          <button type="button" class="btn-ice-sm btn-sm-act" id="btnToggleSnowflakes">...</button>
+        </div>
+
+        <button type="button" class="btn-red-sm btn-sm-act" id="admResetGamesHistoryBtn" style="width:100%;">
+          Сбросить историю «Лавины» (перед 1 дек)
+        </button>
+
+        <input type="text" class="field-input field-sm" id="admEventUserInput" placeholder="@username для сброса снежинок" />
+        <div class="grid-2">
+          <button type="button" class="btn-soft btn-sm-act" id="admResetEventOneBtn">Сброс игроку</button>
+          <button type="button" class="btn-red-sm btn-sm-act" id="admResetEventAllBtn">Сброс ВСЕМ</button>
+        </div>
       </div>
-      <input type="text" class="field-input" id="admTargetUser" placeholder="@username игрока" />
-      <input type="number" class="field-input" id="admTargetStars" placeholder="Количество звёзд (напр. 10)" />
-      <div class="grid-2">
-        <button type="button" class="btn-ice-sm" id="admGiveBtn">Выдать ★</button>
-        <button type="button" class="btn-red-sm" id="admTakeBtn">Списать ★</button>
-      </div>
-      <div class="grid-2">
-        <button type="button" class="btn-soft" id="admResetOneBtn">Сброс 24ч игроку</button>
-        <button type="button" class="btn-soft" id="admResetAllBtn">Сброс 24ч ВСЕМ</button>
+
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Запас лимитных кейсов</h3>
+          <span class="pill-ice" id="stockStatusChip">ЛИМИТ</span>
+        </div>
+        <div class="grid-2">
+          <select class="field-input field-sm" id="admStockCaseSelect">
+            <option value="snow_chest">Снежный сундук</option>
+            <option value="winter_safe">Зимний сейф</option>
+            <option value="winter_crown">Корона зимы</option>
+            <option value="ice_throne">Ледяной трон</option>
+            <option value="thin_ice">Тонкий лёд</option>
+          </select>
+          <input type="number" class="field-input field-sm" id="admStockAmountInput" min="1" value="10" placeholder="Кол-во" />
+        </div>
+        <div class="grid-2">
+          <button type="button" class="btn-ice-sm btn-sm-act" id="admRestockAddBtn">+ Пополнить</button>
+          <button type="button" class="btn-soft btn-sm-act" id="admStockSetTotalBtn">Задать лимит</button>
+        </div>
       </div>
     </div>
 
-    <!-- Рассылка -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Рассылка в ЛС</h2>
+    <!-- ВКЛАДКА 3: ЗАЯВКИ НА ВЫВОД -->
+    <div class="adm-pane fade-in" id="pane-reqs">
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Заявки на вывод ★</h3>
+          <button type="button" class="btn-mini-refresh" id="admReloadReqsBtn">Обновить</button>
+        </div>
+        <div class="items-stack" id="admReqsList">
+          <div class="empty-box">Загрузка заявок...</div>
+        </div>
       </div>
-      <textarea class="broadcast-area" id="admBroadcastText" rows="3" placeholder="Текст сообщения всем игрокам..."></textarea>
-      <button type="button" class="btn-main" id="admBroadcastBtn">Отправить всем</button>
     </div>
 
-    <!-- Заявки на вывод -->
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Заявки на вывод ★</h2>
-        <button type="button" class="btn-mini-refresh" id="admReloadReqsBtn">Обновить</button>
+    <!-- ВКЛАДКА 4: СИСТЕМА, ВЕРСИИ UI И РАССЫЛКА -->
+    <div class="adm-pane fade-in" id="pane-system">
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Дизайн и доступ</h3>
+          <span class="pill-ice">SYSTEM</span>
+        </div>
+
+        <div class="compact-row">
+          <div>
+            <div class="row-title">Мой вид (Админ)</div>
+            <div class="row-sub">Превью зимней витрины</div>
+          </div>
+          <button type="button" class="btn-ice-sm btn-sm-act" id="btnUiAdminVer">v2</button>
+        </div>
+
+        <div class="compact-row">
+          <div>
+            <div class="row-title">Вид для всех игроков</div>
+            <div class="row-sub">Публичная витрина до 1 дек</div>
+          </div>
+          <button type="button" class="btn-soft btn-sm-act" id="btnUiPublicVer">v1</button>
+        </div>
+
+        <div class="compact-row">
+          <div>
+            <div class="row-title">Техработы</div>
+            <div class="row-sub">Закрыть доступ игрокам</div>
+          </div>
+          <button type="button" class="btn-soft btn-sm-act" id="btnModeMaint">...</button>
+        </div>
+
+        <div class="compact-row">
+          <div>
+            <div class="row-title">Режим обновления</div>
+            <div class="row-sub">Экран выкатки патча</div>
+          </div>
+          <button type="button" class="btn-soft btn-sm-act" id="btnModeUpd">...</button>
+        </div>
       </div>
-      <div class="items-stack" id="admReqsList">
-        <div class="empty-box">Загрузка заявок...</div>
+
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Рассылка в ЛС</h3>
+          <span class="pill-ice">PUSH</span>
+        </div>
+        <textarea class="broadcast-area" id="admBroadcastText" rows="2" placeholder="Сообщение всем пользователям бота..."></textarea>
+        <button type="button" class="btn-main btn-sm-act" id="admBroadcastBtn">Отправить рассылку</button>
       </div>
     </div>
   </div>
@@ -233,7 +299,19 @@
   <script>
     (function () {
       let appState = null;
-      let promoRewardType = "stars"; // 'stars' | 'case'
+      let promoRewardType = "stars";
+
+      // Переключение компактных вкладок админки
+      document.querySelectorAll("[data-adm-tab]").forEach((btn) => {
+        btn.onclick = () => {
+          const target = btn.getAttribute("data-adm-tab");
+          document.querySelectorAll("[data-adm-tab]").forEach((b) => b.classList.remove("active"));
+          document.querySelectorAll(".adm-pane").forEach((p) => p.classList.remove("active"));
+          btn.classList.add("active");
+          const pane = document.getElementById(`pane-${target}`);
+          if (pane) pane.classList.add("active");
+        };
+      });
 
       function populateDynamicCaseSelects() {
         if (!appState || !Array.isArray(appState.cases) || !appState.cases.length) return;
@@ -253,13 +331,13 @@
       function syncStockInfo() {
         if (!appState || !Array.isArray(appState.cases)) return;
         const sel = document.getElementById("admStockCaseSelect");
-        const box = document.getElementById("stockStatusBox");
+        const chip = document.getElementById("stockStatusChip");
         const found = appState.cases.find((c) => c.id === sel.value);
         if (found && typeof found.max_opens === "number") {
           const rem = typeof found.remaining === "number" ? found.remaining : found.max_opens;
-          box.innerHTML = `Сейчас в наличии: <b>${rem} из ${found.max_opens} шт.</b>`;
+          chip.textContent = `${rem} / ${found.max_opens} шт.`;
         } else {
-          box.textContent = "Выбери лимитированный кейс для управления запасом.";
+          chip.textContent = "ЛИМИТ";
         }
       }
 
@@ -278,21 +356,21 @@
         const admVer = m.ui_admin_version || "v2";
         const pubVer = m.ui_public_version || "v1";
 
-        btnAdmV.textContent = admVer === "v2" ? "Новый (v2)" : "Старый (v1)";
-        btnPubV.textContent = pubVer === "v2" ? "Новый (v2)" : "Старый (v1)";
-        btnPubV.style.borderColor = pubVer === "v2" ? "var(--ice-bright)" : "";
+        btnAdmV.textContent = admVer.toUpperCase();
+        btnPubV.textContent = pubVer.toUpperCase();
+        btnPubV.className = pubVer === "v2" ? "btn-ice-sm btn-sm-act" : "btn-soft btn-sm-act";
 
         const snowEnabled = m.event_snowflakes_enabled !== false;
         const btnSnow = document.getElementById("btnToggleSnowflakes");
-        btnSnow.textContent = snowEnabled ? "ОТКРЫТ (закрыть)" : "ЗАКРЫТ (открыть)";
-        btnSnow.className = snowEnabled ? "btn-ice-sm" : "btn-red-sm";
+        btnSnow.textContent = snowEnabled ? "ОТКРЫТ" : "ЗАКРЫТ";
+        btnSnow.className = snowEnabled ? "btn-ice-sm btn-sm-act" : "btn-red-sm btn-sm-act";
 
         const btnM = document.getElementById("btnModeMaint");
         const btnU = document.getElementById("btnModeUpd");
-        btnM.textContent = m.maintenance ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
-        btnU.textContent = m.update ? "ВКЛ (выкл)" : "ВЫКЛ (вкл)";
-        btnM.style.borderColor = m.maintenance ? "var(--ice-bright)" : "";
-        btnU.style.borderColor = m.update ? "var(--ice-bright)" : "";
+        btnM.textContent = m.maintenance ? "ВКЛ" : "ВЫКЛ";
+        btnU.textContent = m.update ? "ВКЛ" : "ВЫКЛ";
+        btnM.className = m.maintenance ? "btn-red-sm btn-sm-act" : "btn-soft btn-sm-act";
+        btnU.className = m.update ? "btn-ice-sm btn-sm-act" : "btn-soft btn-sm-act";
 
         populateDynamicCaseSelects();
         syncStockInfo();
@@ -336,7 +414,7 @@
           saveCache(appState);
           syncModeLabels();
           await session.syncFromServer();
-          toast(scope === "admin" ? `Твой вид: ${nextVer.toUpperCase()}` : `Для всех игроков: ${nextVer.toUpperCase()}`);
+          toast(scope === "admin" ? `Твой вид: ${nextVer.toUpperCase()}` : `Для всех: ${nextVer.toUpperCase()}`);
         }
       }
 
@@ -377,17 +455,26 @@
 
       async function loadRequests() {
         const box = document.getElementById("admReqsList");
+        const badge = document.getElementById("admReqsCountBadge");
         const d = await adminPost("/api/admin/requests", {});
         if (!d) return;
-        if (!Array.isArray(d.requests) || !d.requests.length) {
-          box.innerHTML = `<div class="empty-box">Активных заявок на вывод нет</div>`;
+        const list = Array.isArray(d.requests) ? d.requests : [];
+        const pendingCnt = list.filter((r) => r.status !== "done").length;
+
+        if (badge) {
+          badge.style.display = pendingCnt > 0 ? "inline-block" : "none";
+          badge.textContent = String(pendingCnt);
+        }
+
+        if (!list.length) {
+          box.innerHTML = `<div class="empty-box" style="padding:14px;">Активных заявок на вывод нет</div>`;
           return;
         }
 
-        box.innerHTML = d.requests
+        box.innerHTML = list
           .map(
             (req) => `
-              <div class="list-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+              <div class="compact-row" style="flex-direction:column;align-items:stretch;gap:7px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                   <div>
                     <div class="row-title">${Number(req.cost_stars)} ★ → Выдать: ${Number(req.payout_stars)} ★</div>
@@ -397,8 +484,8 @@
                   <span class="req-badge ${req.status === "done" ? "done" : "processing"}">${req.status === "done" ? "Выполнено" : "В работе"}</span>
                 </div>
                 <div class="grid-2">
-                  <button type="button" class="btn-ice-sm" data-done-id="${escapeHtml(req.id)}">Выдано</button>
-                  <button type="button" class="btn-red-sm" data-del-id="${escapeHtml(req.id)}">Удалить</button>
+                  <button type="button" class="btn-ice-sm btn-sm-act" data-done-id="${escapeHtml(req.id)}">Выдано</button>
+                  <button type="button" class="btn-red-sm btn-sm-act" data-del-id="${escapeHtml(req.id)}">Удалить</button>
                 </div>
               </div>
             `
@@ -425,7 +512,7 @@
             const out = await adminPost("/api/admin/delete_request", { request_id: id });
             b.disabled = false;
             if (out) {
-              toast("Заявка удалена из базы");
+              toast("Заявка удалена");
               loadRequests();
             }
           };
@@ -444,7 +531,6 @@
       syncModeLabels();
       loadRequests();
 
-      // Переключатель начисления снежинок ивента (закрыть/открыть)
       const btnSnow = document.getElementById("btnToggleSnowflakes");
       btnSnow.onclick = async () => {
         if (!appState) return;
@@ -457,29 +543,27 @@
           appState.system_modes = d.system_modes || { ...m, event_snowflakes_enabled: !curEnabled };
           saveCache(appState);
           syncModeLabels();
-          toast(!curEnabled ? "Начисление снежинок ОТКРЫТО" : "Начисление снежинок ЗАКРЫТО");
+          toast(!curEnabled ? "Начисление снежинок открыто" : "Начисление снежинок закрыто (скрыто от игроков)");
         }
       };
 
-      // Сброс истории игр перед 1 декабря
       const btnResetHistory = document.getElementById("admResetGamesHistoryBtn");
       btnResetHistory.onclick = async () => {
         btnResetHistory.disabled = true;
         const d = await adminPost("/api/admin/reset_games_history", {});
         btnResetHistory.disabled = false;
         if (d) {
-          toast(d.message || "История игр полностью очищена");
+          toast(d.message || "История игр очищена");
           await session.syncFromServer();
         }
       };
 
-      // Выдача / списание бесплатных открытий кейсов по @username
       async function mutateFreeCases(sign, btnEl) {
         const username = document.getElementById("admFreeCaseUser").value.trim();
         const case_id = document.getElementById("admFreeCaseSelect").value;
         const count = Math.abs(Math.floor(Number(document.getElementById("admFreeCaseCount").value || 0)));
         if (!username || !count) {
-          toast("Укажи @username и количество открытий");
+          toast("Укажи @username и количество");
           return;
         }
         btnEl.disabled = true;
@@ -490,7 +574,7 @@
         });
         btnEl.disabled = false;
         if (d) {
-          toast(d.message || (sign > 0 ? "Бесплатные открытия выданы" : "Открытия списаны"));
+          toast(d.message || "Готово");
           await session.syncFromServer();
         }
       }
@@ -500,7 +584,6 @@
       btnGiveCase.onclick = () => mutateFreeCases(1, btnGiveCase);
       btnTakeCase.onclick = () => mutateFreeCases(-1, btnTakeCase);
 
-      // Переключение типа промокода: звёзды или кейс
       const btnPromoStars = document.getElementById("admPromoTypeStarsBtn");
       const btnPromoCase = document.getElementById("admPromoTypeCaseBtn");
       const promoCaseWrap = document.getElementById("admPromoCaseWrap");
@@ -508,18 +591,18 @@
 
       btnPromoStars.onclick = () => {
         promoRewardType = "stars";
-        btnPromoStars.className = "btn-ice-sm";
-        btnPromoCase.className = "btn-soft";
+        btnPromoStars.className = "btn-ice-sm btn-sm-act";
+        btnPromoCase.className = "btn-soft btn-sm-act";
         promoCaseWrap.style.display = "none";
-        promoAmountInput.placeholder = "Звёзд за 1 акт. (★)";
+        promoAmountInput.placeholder = "За 1 акт. (★)";
       };
 
       btnPromoCase.onclick = () => {
         promoRewardType = "case";
-        btnPromoCase.className = "btn-ice-sm";
-        btnPromoStars.className = "btn-soft";
+        btnPromoCase.className = "btn-ice-sm btn-sm-act";
+        btnPromoStars.className = "btn-soft btn-sm-act";
         promoCaseWrap.style.display = "block";
-        promoAmountInput.placeholder = "Открытий кейса за 1 акт.";
+        promoAmountInput.placeholder = "Открытий за 1 акт.";
       };
 
       const btnPromo = document.getElementById("admPromoCreateBtn");
@@ -530,7 +613,7 @@
         const case_id = promoRewardType === "case" ? document.getElementById("admPromoCaseSelect").value : "";
 
         if (!code || !amountPerUser) {
-          toast("Укажи код и награду на 1 активацию");
+          toast("Укажи код и награду");
           return;
         }
 
@@ -568,7 +651,7 @@
         const d = await adminPost("/api/admin/reset_event", { scope: "one", username });
         btnEvOne.disabled = false;
         if (d) {
-          toast(d.message || "Ивент игрока сброшен");
+          toast(d.message || "Ивент сброшен");
           await session.syncFromServer();
         }
       };
@@ -625,7 +708,7 @@
         const d = await adminPost("/api/admin/reset_user_timer", { username });
         btnResetOne.disabled = false;
         if (d) {
-          toast(d.message || "Таймер игрока сброшен");
+          toast(d.message || "Таймер сброшен");
           await session.syncFromServer();
         }
       };
@@ -638,7 +721,7 @@
         if (d) {
           appState.next_spin_at = 0;
           saveCache(appState);
-          toast(`Таймер сброшен у ${d.updated_users ?? 0} игроков`);
+          toast(`Сброшено у ${d.updated_users ?? 0} игроков`);
           await session.syncFromServer();
         }
       };
