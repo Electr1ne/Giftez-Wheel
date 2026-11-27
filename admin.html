@@ -147,15 +147,26 @@
         </div>
         <div class="grid-2">
           <input type="text" class="field-input field-sm" id="admScratchUser" placeholder="@username" />
-          <input type="number" class="field-input field-sm" id="admScratchCount" min="1" max="500" value="1" placeholder="Билетов (шт.)" />
+          <input type="number" class="field-input field-sm" id="admScratchCount" min="1" max="500" value="1" placeholder="Кол-во (шт.)" />
         </div>
         <div class="grid-2">
           <button type="button" class="btn-ice-sm btn-sm-act" id="admGiveScratchBtn">+ Выдать билеты</button>
           <button type="button" class="btn-red-sm btn-sm-act" id="admTakeScratchBtn">- Списать билеты</button>
         </div>
         <div class="grid-2">
+          <button type="button" class="btn-ice-sm btn-sm-act" id="admGiveScratchExtraBtn">+ Выдать 4-ю попытку</button>
+          <button type="button" class="btn-red-sm btn-sm-act" id="admTakeScratchExtraBtn">- Списать 4-ю попытку</button>
+        </div>
+        <div class="grid-2">
           <button type="button" class="btn-soft btn-sm-act" id="admResetScratchOneBtn">Сброс 24ч игроку</button>
           <button type="button" class="btn-soft btn-sm-act" id="admResetScratchAllBtn">Сброс 24ч ВСЕМ</button>
+        </div>
+        <div class="compact-row">
+          <div>
+            <div class="row-title">Показывать выигрышные ячейки (тест)</div>
+            <div class="row-sub">Подсвечивает содержимое под фольгой только у админа</div>
+          </div>
+          <button type="button" class="btn-soft btn-sm-act" id="btnToggleScratchXray">...</button>
         </div>
       </div>
 
@@ -383,7 +394,8 @@
           update: false,
           ui_admin_version: "v2",
           ui_public_version: "v1",
-          event_snowflakes_enabled: true
+          event_snowflakes_enabled: true,
+          admin_scratch_xray: false
         };
 
         const btnAdmV = document.getElementById("btnUiAdminVer");
@@ -399,6 +411,13 @@
         const btnSnow = document.getElementById("btnToggleSnowflakes");
         btnSnow.textContent = snowEnabled ? "ОТКРЫТ" : "ЗАКРЫТ";
         btnSnow.className = snowEnabled ? "btn-ice-sm btn-sm-act" : "btn-red-sm btn-sm-act";
+
+        const xrayEnabled = Boolean(m.admin_scratch_xray);
+        const btnXray = document.getElementById("btnToggleScratchXray");
+        if (btnXray) {
+          btnXray.textContent = xrayEnabled ? "ВКЛ" : "ВЫКЛ";
+          btnXray.className = xrayEnabled ? "btn-ice-sm btn-sm-act" : "btn-soft btn-sm-act";
+        }
 
         const btnM = document.getElementById("btnModeMaint");
         const btnU = document.getElementById("btnModeUpd");
@@ -582,7 +601,7 @@
       loadRequests();
       loadPendingIdeasCount();
 
-      // Скретч-билеты: выдача и сброс 24ч таймера
+      // Скретч-билеты: выдача билетов, выдача 4-й попытки, тест-подсветка и сброс 24ч таймера
       async function mutateScratchTickets(sign, btnEl) {
         const username = document.getElementById("admScratchUser").value.trim();
         const count = Math.abs(Math.floor(Number(document.getElementById("admScratchCount").value || 0)));
@@ -601,10 +620,49 @@
         }
       }
 
+      async function mutateScratchExtra(sign, btnEl) {
+        const username = document.getElementById("admScratchUser").value.trim();
+        const count = Math.abs(Math.floor(Number(document.getElementById("admScratchCount").value || 0)));
+        if (!username || !count) {
+          toast("Укажи @username и количество попыток");
+          return;
+        }
+        btnEl.disabled = true;
+        const d = await adminPost("/api/admin/scratch_extra", {
+          username,
+          delta: sign * count
+        });
+        btnEl.disabled = false;
+        if (d) {
+          toast(d.message || "Готово");
+        }
+      }
+
       const btnGiveScratch = document.getElementById("admGiveScratchBtn");
       const btnTakeScratch = document.getElementById("admTakeScratchBtn");
       btnGiveScratch.onclick = () => mutateScratchTickets(1, btnGiveScratch);
       btnTakeScratch.onclick = () => mutateScratchTickets(-1, btnTakeScratch);
+
+      const btnGiveScratchExtra = document.getElementById("admGiveScratchExtraBtn");
+      const btnTakeScratchExtra = document.getElementById("admTakeScratchExtraBtn");
+      btnGiveScratchExtra.onclick = () => mutateScratchExtra(1, btnGiveScratchExtra);
+      btnTakeScratchExtra.onclick = () => mutateScratchExtra(-1, btnTakeScratchExtra);
+
+      const btnXray = document.getElementById("btnToggleScratchXray");
+      btnXray.onclick = async () => {
+        if (!appState) return;
+        const m = appState.system_modes || {};
+        const curEnabled = Boolean(m.admin_scratch_xray);
+        btnXray.disabled = true;
+        const d = await adminPost("/api/admin/scratch_xray", { enabled: !curEnabled });
+        btnXray.disabled = false;
+        if (d) {
+          appState.system_modes = d.system_modes || { ...m, admin_scratch_xray: !curEnabled };
+          saveCache(appState);
+          syncModeLabels();
+          toast(d.message || "Готово");
+        }
+      };
 
       const btnResetScratchOne = document.getElementById("admResetScratchOneBtn");
       btnResetScratchOne.onclick = async () => {

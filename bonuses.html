@@ -151,14 +151,14 @@
       border-radius: 17px;
       touch-action: none;
       cursor: grab;
-      transition: opacity 0.32s ease, transform 0.32s ease;
+      transition: opacity 0.28s ease, transform 0.28s ease;
     }
     .scratch-canvas:active {
       cursor: grabbing;
     }
     .scratch-canvas.fading {
       opacity: 0;
-      transform: scale(1.06);
+      transform: scale(1.07);
       pointer-events: none;
     }
     .scratch-canvas.hidden {
@@ -184,7 +184,7 @@
     }
     .scratch-actions-row {
       display: grid;
-      grid-template-columns: 1.4fr 1fr;
+      grid-template-columns: 1.45fr 1fr;
       gap: 8px;
     }
   </style>
@@ -242,7 +242,7 @@
       <div class="card-head">
         <div>
           <h2 style="font-size:18px;font-weight:900;">Скретч-билет</h2>
-          <div class="row-sub">Води пальцем по ячейке, чтобы стереть слой</div>
+          <div class="row-sub">Зажми или проведи пальцем по ячейке</div>
         </div>
         <button type="button" class="btn-mini-refresh" id="closeScratchModalBtn">Закрыть</button>
       </div>
@@ -270,6 +270,7 @@
       let isBusy = false;
       const cellRevealInFlight = {};
       const cellScratchedDone = {};
+      const activeHoldTimers = {};
 
       function formatTimer(sec) {
         const t = Math.max(0, Math.floor(sec));
@@ -277,6 +278,19 @@
         const m = String(Math.floor((t % 3600) / 60)).padStart(2, "0");
         const s = String(t % 60).padStart(2, "0");
         return `${h}:${m}:${s}`;
+      }
+
+      function clearAllHoldTimers() {
+        Object.keys(activeHoldTimers).forEach((k) => {
+          clearInterval(activeHoldTimers[k]);
+          delete activeHoldTimers[k];
+        });
+      }
+
+      function triggerLightHaptic() {
+        try {
+          tg?.HapticFeedback?.impactOccurred?.("light");
+        } catch (_) {}
       }
 
       function updateOuterCard() {
@@ -288,9 +302,14 @@
         if (!ticket) return;
 
         const bonusCnt = Number(ticket.bonus_tickets || 0);
-        if (bonusCnt > 0) {
+        const bonusExtra = Number(ticket.bonus_extra_attempts || 0);
+        const notes = [];
+        if (bonusCnt > 0) notes.push(`Бонусные билеты: <b>${bonusCnt} шт.</b>`);
+        if (bonusExtra > 0) notes.push(`Бесплатные 4-е попытки: <b>${bonusExtra} шт.</b>`);
+
+        if (notes.length) {
           bonusNoteEl.style.display = "block";
-          bonusNoteEl.innerHTML = `У тебя есть дополнительные бесплатные билеты от админа: <b>${bonusCnt} шт.</b>`;
+          bonusNoteEl.innerHTML = `Выдано администратором · ${notes.join(" · ")}`;
         } else {
           bonusNoteEl.style.display = "none";
         }
@@ -303,7 +322,9 @@
           btnEl.className = "btn-main";
         } else if (st === "awaiting_extra") {
           titleEl.textContent = "Есть ещё 1 шанс!";
-          subEl.innerHTML = `3 попытки открыты · Можно взять 4-ю ячейку`;
+          subEl.innerHTML = bonusExtra > 0
+            ? `У тебя есть бесплатная 4-я попытка (${bonusExtra} шт.)`
+            : `3 попытки открыты · Можно взять 4-ю ячейку`;
           btnEl.textContent = "Открыть билет";
           btnEl.className = "btn-main";
         } else {
@@ -344,10 +365,12 @@
 
         const st = ticket.status;
         const bonusCnt = Number(ticket.bonus_tickets || 0);
+        const bonusExtra = Number(ticket.bonus_extra_attempts || 0);
 
         if (st === "playing") {
           const left = Number(ticket.attempts_left || 0);
-          lbl.innerHTML = `Осталось попыток: <b style="color:#7dd3fc;">${left} из ${ticket.max_attempts}</b>`;
+          const xrayTag = ticket.xray_enabled ? ` · <span style="color:#fde047;">TEST X-RAY</span>` : "";
+          lbl.innerHTML = `Осталось попыток: <b style="color:#7dd3fc;">${left} из ${ticket.max_attempts}</b>${xrayTag}`;
           box.innerHTML = "";
           return;
         }
@@ -355,25 +378,40 @@
         if (st === "awaiting_extra") {
           const price = Number(ticket.extra_price || 5);
           lbl.innerHTML = `Попытки закончились · <span style="color:#fde047;">Есть ещё 1 шанс</span>`;
+
+          const primaryActionBtn = bonusExtra > 0
+            ? `<button type="button" class="btn-main" id="btnUseBonusExtraAttempt" style="height:42px;min-height:42px;">
+                 Бесплатный 4-й шанс (${bonusExtra})
+               </button>`
+            : `<button type="button" class="btn-main" id="btnBuyExtraAttempt" style="height:42px;min-height:42px;">
+                 Ещё 1 шанс за ${price} ★
+               </button>`;
+
           box.innerHTML = `
             <div class="scratch-result-banner gold">
               <div style="font-size:13.5px;font-weight:800;color:#fef08a;">
                 ${ticket.has_pair ? "Почти собрал тройку! Открыть 4-ю ячейку?" : "Хочешь испытать удачу на 4-й ячейке?"}
               </div>
               <div class="row-sub" style="color:#e2e8f0;">
-                Можно докупить 1 дополнительную попытку за <b>${price} ★</b> или завершить текущий билет.
+                ${bonusExtra > 0
+                  ? `У тебя доступно бесплатных 4-х попыток: <b>${bonusExtra} шт.</b> или можно завершить билет.`
+                  : `Можно докупить 1 дополнительную попытку за <b>${price} ★</b> или завершить текущий билет.`}
               </div>
               <div class="scratch-actions-row">
-                <button type="button" class="btn-main" id="btnBuyExtraAttempt" style="height:42px;min-height:42px;">
-                  Ещё 1 шанс за ${price} ★
-                </button>
+                ${primaryActionBtn}
                 <button type="button" class="btn-soft" id="btnDeclineExtraAttempt" style="height:42px;min-height:42px;">
                   Завершить
                 </button>
               </div>
             </div>
           `;
-          document.getElementById("btnBuyExtraAttempt").onclick = handleBuyExtra;
+
+          const buyBtn = document.getElementById("btnBuyExtraAttempt");
+          if (buyBtn) buyBtn.onclick = handleBuyExtra;
+
+          const freeExtraBtn = document.getElementById("btnUseBonusExtraAttempt");
+          if (freeExtraBtn) freeExtraBtn.onclick = handleUseBonusExtra;
+
           document.getElementById("btnDeclineExtraAttempt").onclick = handleDeclineExtra;
           return;
         }
@@ -431,7 +469,7 @@
         }
       }
 
-      function paintFoilCanvas(canvas, cellIdx) {
+      function paintFoilCanvas(canvas, cellIdx, xrayVal = null) {
         const rect = canvas.getBoundingClientRect();
         const w = Math.max(90, Math.round(rect.width || 104));
         const h = Math.max(90, Math.round(rect.height || 104));
@@ -443,7 +481,6 @@
         const ctx = canvas.getContext("2d");
         ctx.scale(dpr, dpr);
 
-        // Металлический ледяной градиент фольги
         const grad = ctx.createLinearGradient(0, 0, w, h);
         grad.addColorStop(0, "#2b466e");
         grad.addColorStop(0.5, "#192b47");
@@ -451,7 +488,6 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
 
-        // Диагональные блики
         ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
         ctx.lineWidth = 5;
         for (let offset = -h; offset < w + h; offset += 14) {
@@ -461,7 +497,6 @@
           ctx.stroke();
         }
 
-        // Текстурные искры фольги
         for (let i = 0; i < 34; i++) {
           const sx = ((i * 37 + cellIdx * 13) % (w - 8)) + 4;
           const sy = ((i * 53 + cellIdx * 19) % (h - 8)) + 4;
@@ -471,17 +506,25 @@
           ctx.fill();
         }
 
-        // Надпись по центру защитного слоя
-        ctx.fillStyle = "rgba(224, 242, 254, 0.88)";
+        ctx.fillStyle = "rgba(224, 242, 254, 0.9)";
         ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText("СОТРИ", w / 2, h / 2 + 12);
 
-        // Звёздочка сверху надписи
         ctx.fillStyle = "#7dd3fc";
         ctx.font = "900 16px sans-serif";
         ctx.fillText("✦", w / 2, h / 2 - 8);
+
+        // Тестовая подсветка для админа: показывает номинал ячейки прямо на фольге
+        if (ticket?.xray_enabled && typeof xrayVal === "number") {
+          const label = xrayVal > 0 ? `${xrayVal} ★` : "ПУСТО";
+          ctx.fillStyle = xrayVal > 0 ? "rgba(250, 204, 21, 0.24)" : "rgba(15, 23, 42, 0.55)";
+          ctx.fillRect(6, 6, w - 12, 20);
+          ctx.fillStyle = xrayVal > 0 ? "#fde047" : "#94a3b8";
+          ctx.font = "900 11px sans-serif";
+          ctx.fillText(label, w / 2, 16);
+        }
       }
 
       function getScratchedRatio(canvas) {
@@ -492,7 +535,6 @@
         const data = ctx.getImageData(0, 0, w, h).data;
         let transparent = 0;
         let total = 0;
-        // Проверяем каждый 16-й пиксель для мгновенной скорости на мобильных
         for (let i = 3; i < data.length; i += 64) {
           total++;
           if (data[i] < 40) transparent++;
@@ -506,22 +548,26 @@
         let lastY = null;
         let tickThrottle = 0;
 
-        const scratchAt = (clientX, clientY) => {
+        const stopHold = () => {
+          drawing = false;
+          lastX = null;
+          lastY = null;
+          if (activeHoldTimers[cellIdx]) {
+            clearInterval(activeHoldTimers[cellIdx]);
+            delete activeHoldTimers[cellIdx];
+          }
+        };
+
+        const applyBrush = (x, y, radiusPx) => {
           if (!ticket || ticket.status !== "playing" || isBusy) return;
           if (cellScratchedDone[cellIdx] || cellRevealInFlight[cellIdx]) return;
-
-          const rect = canvas.getBoundingClientRect();
-          const dpr = canvas.width / Math.max(1, rect.width);
-          const x = (clientX - rect.left) * dpr;
-          const y = (clientY - rect.top) * dpr;
-          const brushR = Math.max(16, rect.width * 0.19) * dpr;
 
           const ctx = canvas.getContext("2d");
           ctx.save();
           ctx.globalCompositeOperation = "destination-out";
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
-          ctx.lineWidth = brushR * 2;
+          ctx.lineWidth = radiusPx * 2;
 
           ctx.beginPath();
           if (lastX !== null && lastY !== null) {
@@ -529,7 +575,7 @@
             ctx.lineTo(x, y);
             ctx.stroke();
           } else {
-            ctx.arc(x, y, brushR, 0, Math.PI * 2);
+            ctx.arc(x, y, radiusPx, 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.restore();
@@ -538,17 +584,27 @@
           lastY = y;
 
           const nowMs = Date.now();
-          if (nowMs - tickThrottle > 120) {
+          if (nowMs - tickThrottle > 105) {
             tickThrottle = nowMs;
             playTick();
+            triggerLightHaptic();
           }
 
-          const ratio = getScratchedRatio(canvas);
-          if (ratio >= 0.42) {
+          if (getScratchedRatio(canvas) >= 0.32) {
             cellScratchedDone[cellIdx] = true;
+            stopHold();
             canvas.classList.add("fading");
             revealCellOnServer(cellIdx);
           }
+        };
+
+        const scratchAt = (clientX, clientY, isHoldPulse = false) => {
+          const rect = canvas.getBoundingClientRect();
+          const dpr = canvas.width / Math.max(1, rect.width);
+          const x = (clientX - rect.left) * dpr;
+          const y = (clientY - rect.top) * dpr;
+          const brushR = Math.max(19, rect.width * (isHoldPulse ? 0.25 : 0.21)) * dpr;
+          applyBrush(x, y, brushR);
         };
 
         canvas.addEventListener("pointerdown", (e) => {
@@ -563,25 +619,43 @@
           drawing = true;
           lastX = null;
           lastY = null;
-          scratchAt(e.clientX, e.clientY);
+          const curClientX = e.clientX;
+          const curClientY = e.clientY;
+          scratchAt(curClientX, curClientY, false);
+
+          // Ускоренное стирание при удержании пальца/мыши на ячейке
+          if (activeHoldTimers[cellIdx]) clearInterval(activeHoldTimers[cellIdx]);
+          let holdStep = 1;
+          activeHoldTimers[cellIdx] = setInterval(() => {
+            if (!drawing || cellScratchedDone[cellIdx] || cellRevealInFlight[cellIdx]) {
+              stopHold();
+              return;
+            }
+            const rect = canvas.getBoundingClientRect();
+            const dpr = canvas.width / Math.max(1, rect.width);
+            const angle = holdStep * 1.15;
+            const orbit = Math.min(rect.width * 0.22, holdStep * 3.2) * dpr;
+            const cx = (rect.width * 0.5) * dpr + Math.cos(angle) * orbit;
+            const cy = (rect.height * 0.5) * dpr + Math.sin(angle) * orbit;
+            lastX = cx;
+            lastY = cy;
+            applyBrush(cx, cy, Math.max(20, rect.width * 0.24) * dpr);
+            holdStep++;
+          }, 70);
         });
 
         canvas.addEventListener("pointermove", (e) => {
           if (!drawing) return;
           e.preventDefault();
-          scratchAt(e.clientX, e.clientY);
+          scratchAt(e.clientX, e.clientY, false);
         });
 
-        const endStroke = () => {
-          drawing = false;
-          lastX = null;
-          lastY = null;
-        };
-        canvas.addEventListener("pointerup", endStroke);
-        canvas.addEventListener("pointercancel", endStroke);
+        canvas.addEventListener("pointerup", stopHold);
+        canvas.addEventListener("pointercancel", stopHold);
       }
 
       function renderGrid() {
+        clearAllHoldTimers();
         const grid = document.getElementById("scratchGrid");
         if (!ticket || !Array.isArray(ticket.cells)) {
           grid.innerHTML = "";
@@ -627,14 +701,13 @@
           })
           .join("");
 
-        // Инициализируем фольгу на всех нераскрытых ячейках
         requestAnimationFrame(() => {
           grid.querySelectorAll("[data-scratch-canvas]").forEach((canvas) => {
             const idx = Number(canvas.getAttribute("data-scratch-canvas"));
             const cellObj = ticket.cells[idx];
             if (cellObj && !cellObj.revealed) {
               cellScratchedDone[idx] = false;
-              paintFoilCanvas(canvas, idx);
+              paintFoilCanvas(canvas, idx, cellObj.xray_value);
               attachScratchHandlers(canvas, idx);
             }
           });
@@ -754,6 +827,31 @@
         }
       }
 
+      async function handleUseBonusExtra() {
+        if (isBusy || !tg?.initData) return;
+        isBusy = true;
+        try {
+          const r = await fetch(apiUrl("/api/bonus/scratch/use_bonus_extra"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData: tg.initData })
+          });
+          const d = await r.json();
+          isBusy = false;
+          if (d.ok && d.ticket) {
+            playTick();
+            ticket = d.ticket;
+            renderAll();
+            toast(d.message || "4-я попытка активирована!");
+          } else {
+            toast(d.message || "Не удалось активировать");
+          }
+        } catch (_) {
+          isBusy = false;
+          toast("Ошибка сети");
+        }
+      }
+
       async function handleDeclineExtra() {
         if (isBusy || !tg?.initData) return;
         isBusy = true;
@@ -812,6 +910,7 @@
       }
 
       function closeScratchModal() {
+        clearAllHoldTimers();
         document.getElementById("scratchBackdrop").classList.remove("open");
       }
 
