@@ -134,16 +134,6 @@
 
     <div class="section-card fade-in">
       <div class="card-head">
-        <h2>Промокод</h2>
-        <span class="row-sub">Бонус на баланс</span>
-      </div>
-      <input type="text" class="field-input" id="promoInput" placeholder="Введи промокод" autocomplete="off" />
-      <button type="button" class="btn-main" id="promoActivateBtn">Активировать промокод</button>
-    </div>
-
-    <!-- Компактный блок идей (не занимает лишнее место, список скрыт в окне) -->
-    <div class="section-card fade-in">
-      <div class="card-head">
         <div>
           <h2>Идеи для GiftezUp</h2>
           <div class="row-sub">Предложи новый кейс, режим или улучшение</div>
@@ -161,7 +151,6 @@
     </div>
   </div>
 
-  <!-- Модальное окно подачи идеи и просмотра своих идей -->
   <div class="backdrop" id="ideaModalBackdrop">
     <div class="idea-sheet">
       <div class="card-head">
@@ -176,7 +165,6 @@
         </button>
       </div>
 
-      <!-- Вкладка 1: Форма + мини-FAQ -->
       <div id="ideaNewPane" style="display:flex;flex-direction:column;gap:10px;">
         <div class="idea-faq-box">
           <div><b>Мини-FAQ по идеям:</b></div>
@@ -206,7 +194,6 @@
         <button type="button" class="btn-main" id="submitIdeaBtn">Отправить идею</button>
       </div>
 
-      <!-- Вкладка 2: Мои идеи (скрыта по умолчанию, не мешает заполнению) -->
       <div id="ideaListPane" style="display:none;flex-direction:column;gap:8px;">
         <div class="items-stack" id="myIdeasStack">
           <div class="empty-box">Загрузка твоих идей...</div>
@@ -435,42 +422,6 @@
           }
         } catch (_) {
           btn.disabled = false;
-          toast("Ошибка сети");
-        }
-      };
-
-      document.getElementById("promoActivateBtn").onclick = async () => {
-        const inp = document.getElementById("promoInput");
-        const code = inp.value.trim();
-        if (!code) {
-          toast("Введи промокод");
-          return;
-        }
-        if (!tg?.initData) {
-          toast("Открой в Telegram");
-          return;
-        }
-        try {
-          const r = await fetch(apiUrl("/api/promo_redeem"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ initData: tg.initData, code })
-          });
-          const d = await r.json();
-          if (d.ok) {
-            playWin();
-            inp.value = "";
-            appState.stars_balance = d.stars_balance;
-            appState.wager_left = d.wager_left;
-            appState.withdrawable_stars = d.withdrawable_stars;
-            saveCache(appState);
-            updateStarsDisplay(appState.stars_balance);
-            syncProfile();
-            toast(d.message || "Промокод активирован!");
-          } else {
-            toast(d.message || "Не удалось активировать");
-          }
-        } catch (_) {
           toast("Ошибка сети");
         }
       };

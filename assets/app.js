@@ -145,7 +145,7 @@ if (tg) {
 }
 
 function prefetchAppPages() {
-  const pages = ["index.html", "requests.html", "profile.html", "upgrader.html", "case-daily.html"];
+  const pages = ["index.html", "requests.html", "bonuses.html", "profile.html", "upgrader.html", "case-daily.html"];
   pages.forEach((href) => {
     if (document.querySelector(`link[rel="prefetch"][href="${href}"]`)) return;
     const link = document.createElement("link");
@@ -702,6 +702,7 @@ function mountBottomNav(activeKey, state) {
   const tabs = [
     { key: "home", href: "index.html", label: "Главная" },
     { key: "requests", href: "requests.html", label: "Выводы", badge: (state.my_requests || []).filter((x) => x.status !== "done").length },
+    { key: "bonuses", href: "bonuses.html", label: "Бонусы" },
     { key: "profile", href: "profile.html", label: "Профиль" }
   ];
   if (isAdmin) {
