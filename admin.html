@@ -119,11 +119,11 @@
       </button>
     </div>
 
-    <!-- ВКЛАДКА 1: ИГРОКИ, КЕЙСЫ И ПРОМОКОДЫ -->
+    <!-- ВКЛАДКА 1: ИГРОКИ, КЕЙСЫ, СКРЕТЧ-БИЛЕТЫ И ПРОМОКОДЫ -->
     <div class="adm-pane active fade-in" id="pane-players">
       <div class="compact-card">
         <div class="compact-head">
-          <h3>Баланс и 24ч таймер</h3>
+          <h3>Баланс и 24ч таймер кейса</h3>
           <span class="pill-ice">STARS</span>
         </div>
         <div class="grid-2">
@@ -137,6 +137,25 @@
         <div class="grid-2">
           <button type="button" class="btn-soft btn-sm-act" id="admResetOneBtn">Сброс 24ч игроку</button>
           <button type="button" class="btn-soft btn-sm-act" id="admResetAllBtn">Сброс 24ч ВСЕМ</button>
+        </div>
+      </div>
+
+      <div class="compact-card">
+        <div class="compact-head">
+          <h3>Скретч-билеты (Бонусы)</h3>
+          <span class="pill-ice">SCRATCH</span>
+        </div>
+        <div class="grid-2">
+          <input type="text" class="field-input field-sm" id="admScratchUser" placeholder="@username" />
+          <input type="number" class="field-input field-sm" id="admScratchCount" min="1" max="500" value="1" placeholder="Билетов (шт.)" />
+        </div>
+        <div class="grid-2">
+          <button type="button" class="btn-ice-sm btn-sm-act" id="admGiveScratchBtn">+ Выдать билеты</button>
+          <button type="button" class="btn-red-sm btn-sm-act" id="admTakeScratchBtn">- Списать билеты</button>
+        </div>
+        <div class="grid-2">
+          <button type="button" class="btn-soft btn-sm-act" id="admResetScratchOneBtn">Сброс 24ч игроку</button>
+          <button type="button" class="btn-soft btn-sm-act" id="admResetScratchAllBtn">Сброс 24ч ВСЕМ</button>
         </div>
       </div>
 
@@ -562,6 +581,55 @@
       syncModeLabels();
       loadRequests();
       loadPendingIdeasCount();
+
+      // Скретч-билеты: выдача и сброс 24ч таймера
+      async function mutateScratchTickets(sign, btnEl) {
+        const username = document.getElementById("admScratchUser").value.trim();
+        const count = Math.abs(Math.floor(Number(document.getElementById("admScratchCount").value || 0)));
+        if (!username || !count) {
+          toast("Укажи @username и количество билетов");
+          return;
+        }
+        btnEl.disabled = true;
+        const d = await adminPost("/api/admin/scratch_tickets", {
+          username,
+          delta: sign * count
+        });
+        btnEl.disabled = false;
+        if (d) {
+          toast(d.message || "Готово");
+        }
+      }
+
+      const btnGiveScratch = document.getElementById("admGiveScratchBtn");
+      const btnTakeScratch = document.getElementById("admTakeScratchBtn");
+      btnGiveScratch.onclick = () => mutateScratchTickets(1, btnGiveScratch);
+      btnTakeScratch.onclick = () => mutateScratchTickets(-1, btnTakeScratch);
+
+      const btnResetScratchOne = document.getElementById("admResetScratchOneBtn");
+      btnResetScratchOne.onclick = async () => {
+        const username = document.getElementById("admScratchUser").value.trim();
+        if (!username) {
+          toast("Введи @username");
+          return;
+        }
+        btnResetScratchOne.disabled = true;
+        const d = await adminPost("/api/admin/scratch_reset", { scope: "one", username });
+        btnResetScratchOne.disabled = false;
+        if (d) {
+          toast(d.message || "Таймер билета сброшен");
+        }
+      };
+
+      const btnResetScratchAll = document.getElementById("admResetScratchAllBtn");
+      btnResetScratchAll.onclick = async () => {
+        btnResetScratchAll.disabled = true;
+        const d = await adminPost("/api/admin/scratch_reset", { scope: "all" });
+        btnResetScratchAll.disabled = false;
+        if (d) {
+          toast(d.message || "Таймеры билетов сброшены всем");
+        }
+      };
 
       const btnSnow = document.getElementById("btnToggleSnowflakes");
       btnSnow.onclick = async () => {

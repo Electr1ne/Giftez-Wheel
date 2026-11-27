@@ -7,9 +7,51 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
   <style>
-    .scratch-hero {
+    .ticket-preview-card {
       position: relative;
+      padding: 14px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 85% 15%, rgba(56, 189, 248, 0.22), transparent 55%),
+        linear-gradient(145deg, #101b30 0%, #09101f 100%);
+      border: 1px solid rgba(56, 189, 248, 0.34);
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
       overflow: hidden;
+    }
+    .ticket-preview-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ticket-icon-badge {
+      width: 46px;
+      height: 46px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.24), rgba(250, 204, 21, 0.18));
+      border: 1px solid rgba(125, 211, 252, 0.42);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fde047;
+      flex-shrink: 0;
+    }
+    .scratch-modal-sheet {
+      width: 100%;
+      max-width: 410px;
+      max-height: 92vh;
+      overflow-y: auto;
+      background: #0c1324;
+      border: 1px solid var(--border-strong);
+      border-radius: 24px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.78);
+      animation: enterSoft 0.2s ease;
     }
     .scratch-meta-bar {
       display: flex;
@@ -48,38 +90,33 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       user-select: none;
-      touch-action: pan-y;
+      -webkit-user-select: none;
     }
     .scratch-cell {
       position: relative;
       aspect-ratio: 1 / 1;
       border-radius: 18px;
-      background: linear-gradient(155deg, #111b30 0%, #0a101e 100%);
+      background: linear-gradient(155deg, #111c33 0%, #090f1d 100%);
       border: 1px solid var(--border-strong);
       overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .scratch-cell:active:not(.revealed):not(.locked) {
-      transform: scale(0.96);
-    }
-    .scratch-cell.locked:not(.revealed) {
-      cursor: default;
-      opacity: 0.78;
+      touch-action: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .scratch-cell.win-highlight {
-      border-color: rgba(250, 204, 21, 0.75);
-      background: radial-gradient(circle at 50% 35%, rgba(250, 204, 21, 0.22), rgba(15, 23, 42, 0.95));
-      box-shadow: 0 0 22px rgba(250, 204, 21, 0.28);
+      border-color: rgba(250, 204, 21, 0.8);
+      background: radial-gradient(circle at 50% 35%, rgba(250, 204, 21, 0.24), rgba(15, 23, 42, 0.96));
+      box-shadow: 0 0 22px rgba(250, 204, 21, 0.3);
     }
     .scratch-cell.unpicked-reveal {
-      opacity: 0.46;
+      opacity: 0.45;
     }
     .scratch-prize-inner {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -87,6 +124,7 @@
       gap: 3px;
       text-align: center;
       padding: 6px;
+      pointer-events: none;
     }
     .scratch-prize-val {
       font-size: 19px;
@@ -104,43 +142,27 @@
       color: #64748b;
       opacity: 0.85;
     }
-    .scratch-foil {
+    .scratch-canvas {
       position: absolute;
       inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
       border-radius: 17px;
-      background:
-        radial-gradient(circle at 25% 20%, rgba(186, 230, 253, 0.42), transparent 55%),
-        linear-gradient(135deg, #243b5e 0%, #162640 48%, #29466e 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      color: #e0f2fe;
-      transition: opacity 0.34s ease, transform 0.34s ease, filter 0.34s ease;
-      z-index: 2;
+      touch-action: none;
+      cursor: grab;
+      transition: opacity 0.32s ease, transform 0.32s ease;
     }
-    .scratch-foil::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        -45deg,
-        rgba(255, 255, 255, 0.04) 0px,
-        rgba(255, 255, 255, 0.04) 6px,
-        transparent 6px,
-        transparent 12px
-      );
-      pointer-events: none;
+    .scratch-canvas:active {
+      cursor: grabbing;
     }
-    .scratch-cell.scratching .scratch-foil {
-      transform: scale(0.94);
-      filter: brightness(1.18);
-    }
-    .scratch-cell.revealed .scratch-foil {
+    .scratch-canvas.fading {
       opacity: 0;
-      transform: scale(1.12);
+      transform: scale(1.06);
       pointer-events: none;
+    }
+    .scratch-canvas.hidden {
+      display: none;
     }
     .scratch-result-banner {
       padding: 12px 13px;
@@ -171,17 +193,62 @@
   <div class="app">
     <div id="headerMount"></div>
 
-    <div class="section-card scratch-hero fade-in">
+    <!-- Карточка скретч-билета на странице Бонусы -->
+    <div class="section-card fade-in">
       <div class="card-head">
         <div>
           <h2>Скретч-билет</h2>
-          <div class="row-sub">Сотри 3 ячейки — найди 3 одинаковых приза</div>
+          <div class="row-sub">Ежедневная моментальная лотерея</div>
         </div>
         <span class="pill-ice">ДО 50 ★</span>
       </div>
 
+      <div class="ticket-preview-card">
+        <div class="ticket-preview-top">
+          <div style="display:flex;align-items:center;gap:11px;">
+            <div class="ticket-icon-badge">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1">
+                <rect x="3" y="5" width="18" height="14" rx="3"/>
+                <path d="M8 10h8M8 14h5"/>
+              </svg>
+            </div>
+            <div>
+              <div class="row-title" style="font-size:15px;" id="cardTicketTitle">Счастливый билет 3×3</div>
+              <div class="row-sub" id="cardTicketSub">Загрузка состояния билета...</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cardBonusStockNote" class="note-box" style="display:none;padding:8px 10px;font-size:12px;"></div>
+
+        <button type="button" class="btn-main" id="openScratchModalBtn">Стереть билет</button>
+      </div>
+    </div>
+
+    <!-- Блок промокодов -->
+    <div class="section-card fade-in">
+      <div class="card-head">
+        <h2>Промокод</h2>
+        <span class="row-sub">Бонус на баланс</span>
+      </div>
+      <input type="text" class="field-input" id="promoInput" placeholder="Введи промокод" autocomplete="off" />
+      <button type="button" class="btn-main" id="promoActivateBtn">Активировать промокод</button>
+    </div>
+  </div>
+
+  <!-- Модальное окно стирания билета -->
+  <div class="backdrop" id="scratchBackdrop">
+    <div class="scratch-modal-sheet" onclick="event.stopPropagation()">
+      <div class="card-head">
+        <div>
+          <h2 style="font-size:18px;font-weight:900;">Скретч-билет</h2>
+          <div class="row-sub">Води пальцем по ячейке, чтобы стереть слой</div>
+        </div>
+        <button type="button" class="btn-mini-refresh" id="closeScratchModalBtn">Закрыть</button>
+      </div>
+
       <div class="scratch-meta-bar">
-        <span id="scratchStatusLabel" style="font-weight:700;color:#e2e8f0;">Загрузка билета...</span>
+        <span id="scratchStatusLabel" style="font-weight:700;color:#e2e8f0;">Загрузка...</span>
         <div class="scratch-dots" id="scratchDotsWrap"></div>
       </div>
 
@@ -193,15 +260,6 @@
         Сотри 3 ячейки из 9. Собери 3 одинаковых приза от <b>1 до 50 ★</b> и забери выигрыш! Новый билет — каждые 24 часа.
       </div>
     </div>
-
-    <div class="section-card fade-in">
-      <div class="card-head">
-        <h2>Промокод</h2>
-        <span class="row-sub">Бонус на баланс</span>
-      </div>
-      <input type="text" class="field-input" id="promoInput" placeholder="Введи промокод" autocomplete="off" />
-      <button type="button" class="btn-main" id="promoActivateBtn">Активировать промокод</button>
-    </div>
   </div>
 
   <script src="assets/app.js"></script>
@@ -210,7 +268,8 @@
       let appState = null;
       let ticket = null;
       let isBusy = false;
-      let swipeActive = false;
+      const cellRevealInFlight = {};
+      const cellScratchedDone = {};
 
       function formatTimer(sec) {
         const t = Math.max(0, Math.floor(sec));
@@ -218,6 +277,44 @@
         const m = String(Math.floor((t % 3600) / 60)).padStart(2, "0");
         const s = String(t % 60).padStart(2, "0");
         return `${h}:${m}:${s}`;
+      }
+
+      function updateOuterCard() {
+        const titleEl = document.getElementById("cardTicketTitle");
+        const subEl = document.getElementById("cardTicketSub");
+        const btnEl = document.getElementById("openScratchModalBtn");
+        const bonusNoteEl = document.getElementById("cardBonusStockNote");
+
+        if (!ticket) return;
+
+        const bonusCnt = Number(ticket.bonus_tickets || 0);
+        if (bonusCnt > 0) {
+          bonusNoteEl.style.display = "block";
+          bonusNoteEl.innerHTML = `У тебя есть дополнительные бесплатные билеты от админа: <b>${bonusCnt} шт.</b>`;
+        } else {
+          bonusNoteEl.style.display = "none";
+        }
+
+        const st = ticket.status;
+        if (st === "playing") {
+          titleEl.textContent = "Билет готов к стиранию";
+          subEl.innerHTML = `Осталось попыток: <b style="color:#7dd3fc;">${ticket.attempts_left} из ${ticket.max_attempts}</b>`;
+          btnEl.textContent = "Стереть билет";
+          btnEl.className = "btn-main";
+        } else if (st === "awaiting_extra") {
+          titleEl.textContent = "Есть ещё 1 шанс!";
+          subEl.innerHTML = `3 попытки открыты · Можно взять 4-ю ячейку`;
+          btnEl.textContent = "Открыть билет";
+          btnEl.className = "btn-main";
+        } else {
+          const now = Math.floor(Date.now() / 1000);
+          const nextAt = Number(ticket.next_ticket_at || 0);
+          const leftStr = nextAt > now ? formatTimer(nextAt - now) : "00:00:00";
+          titleEl.textContent = st === "won" ? `Выигрыш +${ticket.prize_stars} ★` : "Билет сыгран";
+          subEl.innerHTML = `Новый бесплатный билет через <b id="cardCdSpan">${leftStr}</b>`;
+          btnEl.textContent = bonusCnt > 0 ? `Открыть бонусный билет (${bonusCnt} шт.)` : "Посмотреть билет";
+          btnEl.className = bonusCnt > 0 ? "btn-main" : "btn-soft";
+        }
       }
 
       function renderDots() {
@@ -246,6 +343,8 @@
         }
 
         const st = ticket.status;
+        const bonusCnt = Number(ticket.bonus_tickets || 0);
+
         if (st === "playing") {
           const left = Number(ticket.attempts_left || 0);
           lbl.innerHTML = `Осталось попыток: <b style="color:#7dd3fc;">${left} из ${ticket.max_attempts}</b>`;
@@ -282,25 +381,25 @@
         const now = Math.floor(Date.now() / 1000);
         const nextAt = Number(ticket.next_ticket_at || 0);
         const leftStr = nextAt > now ? formatTimer(nextAt - now) : "00:00:00";
+        lbl.innerHTML = `Билет сыгран · Новый через <b id="scratchCdSpan">${leftStr}</b>`;
+
+        const nextBonusBtnHtml = bonusCnt > 0
+          ? `<button type="button" class="btn-main" id="btnUseBonusTicket" style="height:40px;min-height:40px;margin-top:2px;">Открыть следующий билет (осталось ${bonusCnt} шт.)</button>`
+          : "";
 
         if (st === "won") {
-          lbl.innerHTML = `Билет сыгран · Новый через <b id="scratchCdSpan">${leftStr}</b>`;
           box.innerHTML = `
             <div class="scratch-result-banner gold">
               <div style="font-size:15px;font-weight:900;color:#fde047;">
                 Победа! Выигрыш +${Number(ticket.prize_stars || 0)} ★
               </div>
               <div class="row-sub" style="color:#e2e8f0;">
-                Звёзды уже зачислены на твой баланс. Новый бесплатный билет появится через 24 часа.
+                Звёзды зачислены на твой баланс. Новый бесплатный билет появится через 24 часа.
               </div>
+              ${nextBonusBtnHtml}
             </div>
           `;
-          return;
-        }
-
-        // status === "lost"
-        lbl.innerHTML = `Билет завершён · Новый через <b id="scratchCdSpan">${leftStr}</b>`;
-        if (ticket.is_consolation && Number(ticket.prize_stars || 0) > 0) {
+        } else if (ticket.is_consolation && Number(ticket.prize_stars || 0) > 0) {
           box.innerHTML = `
             <div class="scratch-result-banner">
               <div style="font-size:14.5px;font-weight:900;color:#7dd3fc;">
@@ -309,6 +408,7 @@
               <div class="row-sub" style="color:#e2e8f0;">
                 Бонус зачислен на баланс. Новый билет будет доступен через 24 часа.
               </div>
+              ${nextBonusBtnHtml}
             </div>
           `;
         } else {
@@ -320,9 +420,165 @@
               <div class="row-sub">
                 Все ячейки вскрыты. Новый бесплатный билет откроется через 24 часа.
               </div>
+              ${nextBonusBtnHtml}
             </div>
           `;
         }
+
+        const useBonusBtn = document.getElementById("btnUseBonusTicket");
+        if (useBonusBtn) {
+          useBonusBtn.onclick = handleUseBonusTicket;
+        }
+      }
+
+      function paintFoilCanvas(canvas, cellIdx) {
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.max(90, Math.round(rect.width || 104));
+        const h = Math.max(90, Math.round(rect.height || 104));
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+
+        const ctx = canvas.getContext("2d");
+        ctx.scale(dpr, dpr);
+
+        // Металлический ледяной градиент фольги
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "#2b466e");
+        grad.addColorStop(0.5, "#192b47");
+        grad.addColorStop(1, "#315280");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Диагональные блики
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+        ctx.lineWidth = 5;
+        for (let offset = -h; offset < w + h; offset += 14) {
+          ctx.beginPath();
+          ctx.moveTo(offset, 0);
+          ctx.lineTo(offset + h, h);
+          ctx.stroke();
+        }
+
+        // Текстурные искры фольги
+        for (let i = 0; i < 34; i++) {
+          const sx = ((i * 37 + cellIdx * 13) % (w - 8)) + 4;
+          const sy = ((i * 53 + cellIdx * 19) % (h - 8)) + 4;
+          ctx.fillStyle = i % 2 === 0 ? "rgba(186, 230, 253, 0.25)" : "rgba(255, 255, 255, 0.14)";
+          ctx.beginPath();
+          ctx.arc(sx, sy, (i % 3) * 0.6 + 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Надпись по центру защитного слоя
+        ctx.fillStyle = "rgba(224, 242, 254, 0.88)";
+        ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("СОТРИ", w / 2, h / 2 + 12);
+
+        // Звёздочка сверху надписи
+        ctx.fillStyle = "#7dd3fc";
+        ctx.font = "900 16px sans-serif";
+        ctx.fillText("✦", w / 2, h / 2 - 8);
+      }
+
+      function getScratchedRatio(canvas) {
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width;
+        const h = canvas.height;
+        if (!w || !h) return 0;
+        const data = ctx.getImageData(0, 0, w, h).data;
+        let transparent = 0;
+        let total = 0;
+        // Проверяем каждый 16-й пиксель для мгновенной скорости на мобильных
+        for (let i = 3; i < data.length; i += 64) {
+          total++;
+          if (data[i] < 40) transparent++;
+        }
+        return total > 0 ? transparent / total : 0;
+      }
+
+      function attachScratchHandlers(canvas, cellIdx) {
+        let drawing = false;
+        let lastX = null;
+        let lastY = null;
+        let tickThrottle = 0;
+
+        const scratchAt = (clientX, clientY) => {
+          if (!ticket || ticket.status !== "playing" || isBusy) return;
+          if (cellScratchedDone[cellIdx] || cellRevealInFlight[cellIdx]) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const dpr = canvas.width / Math.max(1, rect.width);
+          const x = (clientX - rect.left) * dpr;
+          const y = (clientY - rect.top) * dpr;
+          const brushR = Math.max(16, rect.width * 0.19) * dpr;
+
+          const ctx = canvas.getContext("2d");
+          ctx.save();
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = brushR * 2;
+
+          ctx.beginPath();
+          if (lastX !== null && lastY !== null) {
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          } else {
+            ctx.arc(x, y, brushR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+
+          lastX = x;
+          lastY = y;
+
+          const nowMs = Date.now();
+          if (nowMs - tickThrottle > 120) {
+            tickThrottle = nowMs;
+            playTick();
+          }
+
+          const ratio = getScratchedRatio(canvas);
+          if (ratio >= 0.42) {
+            cellScratchedDone[cellIdx] = true;
+            canvas.classList.add("fading");
+            revealCellOnServer(cellIdx);
+          }
+        };
+
+        canvas.addEventListener("pointerdown", (e) => {
+          if (!ticket || ticket.status !== "playing") {
+            if (ticket?.status === "awaiting_extra") {
+              toast("3 попытки использованы — выбери действие ниже");
+            }
+            return;
+          }
+          e.preventDefault();
+          canvas.setPointerCapture(e.pointerId);
+          drawing = true;
+          lastX = null;
+          lastY = null;
+          scratchAt(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener("pointermove", (e) => {
+          if (!drawing) return;
+          e.preventDefault();
+          scratchAt(e.clientX, e.clientY);
+        });
+
+        const endStroke = () => {
+          drawing = false;
+          lastX = null;
+          lastY = null;
+        };
+        canvas.addEventListener("pointerup", endStroke);
+        canvas.addEventListener("pointercancel", endStroke);
       }
 
       function renderGrid() {
@@ -332,7 +588,6 @@
           return;
         }
 
-        const canClick = ticket.status === "playing" && Number(ticket.attempts_left || 0) > 0;
         const isFinished = ticket.status === "won" || ticket.status === "lost";
         const winVal = ticket.status === "won" ? Number(ticket.prize_stars || 0) : 0;
 
@@ -364,41 +619,30 @@
             }
 
             return `
-              <div class="scratch-cell ${c.revealed ? "revealed" : ""} ${!canClick ? "locked" : ""} ${isWinCell ? "win-highlight" : ""} ${isUnpickedReveal ? "unpicked-reveal" : ""}"
-                   data-cell-idx="${c.index}">
+              <div class="scratch-cell ${isWinCell ? "win-highlight" : ""} ${isUnpickedReveal ? "unpicked-reveal" : ""}" data-cell-wrap="${c.index}">
                 ${innerHtml}
-                <div class="scratch-foil">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" style="opacity:0.9;">
-                    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/>
-                  </svg>
-                  <span style="font-size:10.5px;font-weight:800;letter-spacing:0.04em;opacity:0.85;">СОТРИ</span>
-                </div>
+                <canvas class="scratch-canvas ${c.revealed ? "hidden" : ""}" data-scratch-canvas="${c.index}"></canvas>
               </div>
             `;
           })
           .join("");
 
-        grid.querySelectorAll(".scratch-cell").forEach((cellEl) => {
-          const idx = Number(cellEl.getAttribute("data-cell-idx"));
-          cellEl.addEventListener("pointerdown", () => {
-            swipeActive = true;
-            cellEl.classList.add("scratching");
-            revealCell(idx);
-          });
-          cellEl.addEventListener("pointerenter", () => {
-            if (swipeActive) {
-              cellEl.classList.add("scratching");
-              revealCell(idx);
+        // Инициализируем фольгу на всех нераскрытых ячейках
+        requestAnimationFrame(() => {
+          grid.querySelectorAll("[data-scratch-canvas]").forEach((canvas) => {
+            const idx = Number(canvas.getAttribute("data-scratch-canvas"));
+            const cellObj = ticket.cells[idx];
+            if (cellObj && !cellObj.revealed) {
+              cellScratchedDone[idx] = false;
+              paintFoilCanvas(canvas, idx);
+              attachScratchHandlers(canvas, idx);
             }
           });
         });
       }
 
-      window.addEventListener("pointerup", () => {
-        swipeActive = false;
-      });
-
       function renderAll() {
+        updateOuterCard();
         renderDots();
         renderGrid();
         renderDynamicBanner();
@@ -427,17 +671,15 @@
         } catch (_) {}
       }
 
-      async function revealCell(idx) {
-        if (isBusy || !ticket || ticket.status !== "playing") return;
-        const targetCell = ticket.cells?.[idx];
-        if (!targetCell || targetCell.revealed) return;
+      async function revealCellOnServer(idx) {
+        if (cellRevealInFlight[idx]) return;
         if (!tg?.initData) {
           toast("Открой в Telegram");
           return;
         }
 
+        cellRevealInFlight[idx] = true;
         isBusy = true;
-        playTick();
         try {
           const r = await fetch(apiUrl("/api/bonus/scratch/reveal"), {
             method: "POST",
@@ -445,12 +687,14 @@
             body: JSON.stringify({ initData: tg.initData, cell_index: idx })
           });
           const d = await r.json();
+          cellRevealInFlight[idx] = false;
           isBusy = false;
+
           if (!d.ok && d.message) {
             toast(d.message);
           }
           if (d.ticket) {
-            const prevStatus = ticket.status;
+            const prevStatus = ticket?.status;
             ticket = d.ticket;
             if (appState && typeof d.stars_balance === "number") {
               appState.stars_balance = d.stars_balance;
@@ -470,6 +714,7 @@
             }
           }
         } catch (_) {
+          cellRevealInFlight[idx] = false;
           isBusy = false;
           toast("Ошибка сети");
         }
@@ -530,6 +775,46 @@
         }
       }
 
+      async function handleUseBonusTicket() {
+        if (isBusy || !tg?.initData) return;
+        isBusy = true;
+        try {
+          const r = await fetch(apiUrl("/api/bonus/scratch/use_bonus"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData: tg.initData })
+          });
+          const d = await r.json();
+          isBusy = false;
+          if (d.ok && d.ticket) {
+            Object.keys(cellScratchedDone).forEach((k) => delete cellScratchedDone[k]);
+            Object.keys(cellRevealInFlight).forEach((k) => delete cellRevealInFlight[k]);
+            ticket = d.ticket;
+            renderAll();
+            toast(d.message || "Открыт новый билет!");
+          } else {
+            toast(d.message || "Не удалось открыть билет");
+          }
+        } catch (_) {
+          isBusy = false;
+          toast("Ошибка сети");
+        }
+      }
+
+      function openScratchModal() {
+        const bd = document.getElementById("scratchBackdrop");
+        bd.classList.add("open");
+        if (ticket) {
+          renderAll();
+        } else {
+          loadScratchState();
+        }
+      }
+
+      function closeScratchModal() {
+        document.getElementById("scratchBackdrop").classList.remove("open");
+      }
+
       const session = initGiftezPage("bonuses", {
         onStateReady(fresh) {
           appState = fresh;
@@ -539,6 +824,17 @@
       appState = session.state;
       loadScratchState();
 
+      document.getElementById("openScratchModalBtn").onclick = async () => {
+        if (ticket && (ticket.status === "won" || ticket.status === "lost") && Number(ticket.bonus_tickets || 0) > 0) {
+          await handleUseBonusTicket();
+        }
+        openScratchModal();
+      };
+      document.getElementById("closeScratchModalBtn").onclick = closeScratchModal;
+      document.getElementById("scratchBackdrop").onclick = (e) => {
+        if (e.target.id === "scratchBackdrop") closeScratchModal();
+      };
+
       setInterval(() => {
         if (!ticket || (ticket.status !== "won" && ticket.status !== "lost")) return;
         const now = Math.floor(Date.now() / 1000);
@@ -547,10 +843,11 @@
           loadScratchState();
           return;
         }
-        const span = document.getElementById("scratchCdSpan");
-        if (span && nextAt > now) {
-          span.textContent = formatTimer(nextAt - now);
-        }
+        const leftStr = nextAt > now ? formatTimer(nextAt - now) : "00:00:00";
+        const spanModal = document.getElementById("scratchCdSpan");
+        const spanCard = document.getElementById("cardCdSpan");
+        if (spanModal) spanModal.textContent = leftStr;
+        if (spanCard) spanCard.textContent = leftStr;
       }, 1000);
 
       document.getElementById("promoActivateBtn").onclick = async () => {
